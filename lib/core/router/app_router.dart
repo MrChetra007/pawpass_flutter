@@ -9,6 +9,7 @@ import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/pets/pet_list_screen.dart';
 import '../../features/pets/pet_profile_screen.dart';
 import '../../features/records/records_list_screen.dart';
+import '../../features/records/add_edit_record_screen.dart';
 import '../../features/appointments/appointments_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/theme_picker_screen.dart';

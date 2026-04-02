@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/pet_model.dart';
 
@@ -86,21 +85,5 @@ class PetRepository {
 
   Future<void> deletePet(String id) async {
     await _supabase.from('pets').update({'is_active': false}).eq('id', id);
-  }
-
-  Future<String?> uploadPhoto(String petId, String filePath) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) throw Exception('Not authenticated');
-
-    final fileName =
-        '${user.id}/$petId/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-    final file = File(filePath);
-    await _supabase.storage
-        .from('pet-photos')
-        .upload(fileName, file);
-
-    final url = _supabase.storage.from('pet-photos').getPublicUrl(fileName);
-    return url;
   }
 }
