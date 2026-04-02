@@ -31,6 +31,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     _initAnimations();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadData();
+  }
+
   void _initAnimations() {
     _controllers = List.generate(
       4,
@@ -484,7 +490,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             appointments
                 .where(
                   (a) =>
-                      a.status != 'cancelled' &&
+                      a.status == 'upcoming' &&
                       a.datetime.isAfter(DateTime.now()),
                 )
                 .toList()
