@@ -574,7 +574,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
+      builder: (sheetContext) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -611,7 +611,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(sheetContext),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -644,14 +644,17 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
 
   Future<void> _switchPlan(String plan) async {
     final theme = Theme.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final screenContext = context;
     
     Navigator.pop(context);
     
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
+    await Future.delayed(const Duration(milliseconds: 200));
+    
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        content: const Text('Switching plan...'),
+        duration: const Duration(seconds: 1),
       ),
     );
 
@@ -667,29 +670,32 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
         
         ref.invalidate(userProvider);
         
-        if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Successfully switched to ${plan == "pro" ? "Paw Plan" : "Family Plan"}!'),
-              backgroundColor: PawThemeData.successGreen,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Error switching plan: $e'),
-            backgroundColor: theme.colorScheme.error,
+            content: Text('Successfully switched to ${plan == "pro" ? "Paw Plan" : "Family Plan"}!'),
+            backgroundColor: PawThemeData.successGreen,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: const Text('User not authenticated'),
+            backgroundColor: theme.colorScheme.error,
           ),
         );
       }
+    } catch (e) {
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error switching plan: $e'),
+          backgroundColor: theme.colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
