@@ -7,6 +7,7 @@ import '../../features/auth/register_screen.dart';
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/pets/pet_list_screen.dart';
+import '../../features/pets/pet_profile_screen.dart';
 import '../../features/records/records_list_screen.dart';
 import '../../features/appointments/appointments_screen.dart';
 import '../../features/profile/profile_screen.dart';
@@ -54,6 +55,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/pets',
             builder: (context, state) => const PetListScreen(),
+          ),
+          GoRoute(
+            path: '/pets/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return PetProfileScreen(petId: id);
+            },
           ),
           GoRoute(
             path: '/records',
