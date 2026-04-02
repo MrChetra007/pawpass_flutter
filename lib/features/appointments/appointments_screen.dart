@@ -60,6 +60,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
             expandedHeight: 100,
             floating: true,
             pinned: true,
+            automaticallyImplyLeading: false,
             backgroundColor: theme.scaffoldBackgroundColor,
             flexibleSpace: FlexibleSpaceBar(
               background: SafeArea(
