@@ -1,25 +1,438 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../core/theme/app_theme_data.dart';
+import '../../data/models/appointment_model.dart';
+import '../../shared/providers/appointment_provider.dart';
+import '../../shared/providers/pet_provider.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/paw_card.dart';
+import '../../shared/widgets/skeleton_loader.dart';
 import '../../shared/widgets/upgrade_modal.dart';
+import 'add_edit_appointment_screen.dart';
 
-class AppointmentsScreen extends ConsumerWidget {
+class AppointmentsScreen extends ConsumerStatefulWidget {
   const AppointmentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppointmentsScreen> createState() => _AppointmentsScreenState();
+}
+
+class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  String? _selectedPetId;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    Future.microtask(() {
+      ref.read(appointmentNotifierProvider.notifier).loadAppointments();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final petsAsync = ref.watch(petNotifierProvider);
+    final appointmentsAsync = ref.watch(appointmentNotifierProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Appointments'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Upcoming'),
+            Tab(text: 'Past'),
+          ],
+        ),
       ),
-      body: const EmptyState(
-        icon: Icons.calendar_today,
-        title: 'No appointments',
-        subtitle: 'Schedule vet visits and grooming appointments',
+      body: Column(
+        children: [
+          _buildPetFilter(petsAsync),
+          Expanded(
+            child: appointmentsAsync.when(
+              loading: () => _buildLoadingState(),
+              error: (e, _) => _buildErrorState(e.toString()),
+              data: (appointments) {
+                final filteredAppointments = _selectedPetId != null
+                    ? appointments.where((a) => a.petId == _selectedPetId).toList()
+                    : appointments;
+
+                if (filteredAppointments.isEmpty) {
+                  return EmptyState(
+                    icon: Icons.calendar_today,
+                    title: 'No appointments',
+                    subtitle: 'Schedule vet visits and grooming appointments',
+                    actionLabel: 'Add Appointment',
+                    onAction: () => _showAddAppointment(petsAsync),
+                  );
+                }
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildAppointmentsList(
+                      filteredAppointments
+                          .where((a) => a.status == 'upcoming')
+                          .toList(),
+                      'upcoming',
+                      petsAsync,
+                    ),
+                    _buildAppointmentsList(
+                      filteredAppointments
+                          .where((a) => a.status != 'upcoming')
+                          .toList(),
+                      'past',
+                      petsAsync,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => UpgradeModal.show(context),
+        onPressed: () => _showAddAppointment(petsAsync),
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildPetFilter(AsyncValue<List> petsAsync) {
+    return petsAsync.when(
+      data: (pets) {
+        if (pets.isEmpty) return const SizedBox();
+        return Container(
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: const Text('All Pets'),
+                  selected: _selectedPetId == null,
+                  onSelected: (_) => setState(() => _selectedPetId = null),
+                ),
+              ),
+              ...pets.map((pet) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(pet.name),
+                      selected: _selectedPetId == pet.id,
+                      onSelected: (_) => setState(() => _selectedPetId = pet.id),
+                    ),
+                  )),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox(),
+      error: (_, __) => const SizedBox(),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      itemBuilder: (context, index) => const Padding(
+        padding: EdgeInsets.only(bottom: 12),
+        child: SkeletonCard(),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          Text('Error: $error'),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () =>
+                ref.read(appointmentNotifierProvider.notifier).loadAppointments(),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppointmentsList(
+    List<Appointment> appointments,
+    String type,
+    AsyncValue<List> petsAsync,
+  ) {
+    if (appointments.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.event_available,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              type == 'upcoming' ? 'No upcoming appointments' : 'No past appointments',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: appointments.length,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildAppointmentCard(appointments[index], petsAsync),
+        );
+      },
+    );
+  }
+
+  Widget _buildAppointmentCard(Appointment appointment, AsyncValue<List> petsAsync) {
+    final theme = Theme.of(context);
+    final isPast = appointment.status != 'upcoming';
+
+    Color borderColor;
+    switch (appointment.status) {
+      case 'completed':
+        borderColor = PawThemeData.successGreen;
+        break;
+      case 'cancelled':
+        borderColor = Colors.grey;
+        break;
+      default:
+        borderColor = appointment.datetime.isBefore(DateTime.now())
+            ? Colors.red
+            : theme.colorScheme.primary;
+    }
+
+    String petName = 'Unknown Pet';
+    petsAsync.whenData((pets) {
+      final pet = pets.where((p) => p.id == appointment.petId).firstOrNull;
+      if (pet != null) petName = pet.name;
+    });
+
+    return Dismissible(
+      key: Key(appointment.id),
+      background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        color: PawThemeData.successGreen,
+        child: const Icon(Icons.check, color: Colors.white),
+      ),
+      secondaryBackground: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.red,
+        child: const Icon(Icons.cancel, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          await ref
+              .read(appointmentNotifierProvider.notifier)
+              .markAsCompleted(appointment.id);
+          return false;
+        } else {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Cancel Appointment'),
+              content: const Text('Are you sure you want to cancel this appointment?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('No'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Yes, Cancel'),
+                ),
+              ],
+            ),
+          );
+          if (confirm == true) {
+            await ref
+                .read(appointmentNotifierProvider.notifier)
+                .cancelAppointment(appointment.id);
+          }
+          return false;
+        }
+      },
+      child: PawCard(
+        onTap: () => _showEditAppointment(appointment),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(color: borderColor, width: 4),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: borderColor.withValues(alpha: 0.1),
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                ),
+                child: Icon(
+                  _getTypeIcon(appointment.type),
+                  color: borderColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            appointment.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              decoration: isPast ? TextDecoration.lineThrough : null,
+                            ),
+                          ),
+                        ),
+                        if (appointment.status == 'cancelled')
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Cancelled',
+                              style: TextStyle(fontSize: 10, color: Colors.grey),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      petName,
+                      style: theme.textTheme.labelMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat('MMM d, yyyy').format(appointment.datetime),
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat('h:mm a').format(appointment.datetime),
+                          style: theme.textTheme.labelMedium,
+                        ),
+                      ],
+                    ),
+                    if (appointment.clinicName != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: theme.textTheme.labelMedium?.color,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              appointment.clinicName!,
+                              style: theme.textTheme.labelMedium,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getTypeIcon(String? type) {
+    switch (type) {
+      case 'vet':
+        return Icons.medical_services;
+      case 'grooming':
+        return Icons.content_cut;
+      case 'training':
+        return Icons.school;
+      default:
+        return Icons.event;
+    }
+  }
+
+  void _showAddAppointment(AsyncValue<List> petsAsync) {
+    petsAsync.whenData((pets) {
+      if (pets.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Add a pet first')),
+        );
+        return;
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddEditAppointmentScreen(petId: pets.first.id),
+        ),
+      );
+    });
+  }
+
+  void _showEditAppointment(Appointment appointment) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddEditAppointmentScreen(
+          petId: appointment.petId,
+          appointment: appointment,
+        ),
       ),
     );
   }

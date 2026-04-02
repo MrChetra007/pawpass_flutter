@@ -13,6 +13,7 @@ import '../../features/records/add_edit_record_screen.dart';
 import '../../features/appointments/appointments_screen.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/vaccines/add_edit_vaccine_screen.dart';
+import '../../features/appointments/add_edit_appointment_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/theme_picker_screen.dart';
 
