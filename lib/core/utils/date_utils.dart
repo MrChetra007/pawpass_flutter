@@ -22,6 +22,14 @@ class AppDateUtils {
     return _dateTimeFormat.format(date);
   }
 
+  static String formatFullDate(DateTime date) {
+    final weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    final months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    final weekday = weekdays[date.weekday - 1];
+    final month = months[date.month - 1];
+    return '$weekday, $month ${date.day}, ${date.year}';
+  }
+
   static String formatAge(DateTime birthDate) {
     final now = DateTime.now();
     final years = now.year - birthDate.year;

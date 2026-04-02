@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/theme/app_theme_data.dart';
 import '../../core/utils/date_utils.dart';
 import '../../core/utils/feature_gate.dart';
 import '../../data/models/vaccine_model.dart';
@@ -518,12 +519,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     customMessage: 'View appointments with Paw Plan',
                   );
                   if (hasAccess && context.mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AppointmentsScreen(),
-                      ),
-                    );
+                    _showAppointmentBottomSheet(context, apt);
                   }
                 },
               ),
@@ -668,6 +664,288 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       ),
     ),
     );
+  }
+
+  void _showAppointmentBottomSheet(BuildContext context, dynamic appointment) {
+    final theme = Theme.of(context);
+    final petsAsync = ref.read(petNotifierProvider);
+
+    String petName = 'Unknown Pet';
+    petsAsync.whenData((pets) {
+      final pet = pets.where((p) => p.id == appointment.petId).firstOrNull;
+      if (pet != null) petName = pet.name;
+    });
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    _getAppointmentTypeIcon(appointment.type),
+                    color: theme.colorScheme.primary,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appointment.title,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Upcoming',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildDetailRow(
+              theme,
+              Icons.pets,
+              'Pet',
+              petName,
+            ),
+            _buildDetailRow(
+              theme,
+              Icons.calendar_today,
+              'Date',
+              AppDateUtils.formatFullDate(appointment.datetime),
+            ),
+            _buildDetailRow(
+              theme,
+              Icons.access_time,
+              'Time',
+              _formatTime(appointment.datetime),
+            ),
+            if (appointment.vetName != null && appointment.vetName!.isNotEmpty)
+              _buildDetailRow(
+                theme,
+                Icons.person,
+                'Vet',
+                appointment.vetName!,
+              ),
+            if (appointment.clinicName != null && appointment.clinicName!.isNotEmpty)
+              _buildDetailRow(
+                theme,
+                Icons.local_hospital,
+                'Clinic',
+                appointment.clinicName!,
+              ),
+            if (appointment.clinicPhone != null && appointment.clinicPhone!.isNotEmpty)
+              _buildDetailRow(
+                theme,
+                Icons.phone,
+                'Phone',
+                appointment.clinicPhone!,
+              ),
+            if (appointment.clinicAddress != null && appointment.clinicAddress!.isNotEmpty)
+              _buildDetailRow(
+                theme,
+                Icons.location_on,
+                'Address',
+                appointment.clinicAddress!,
+              ),
+            if (appointment.notes != null && appointment.notes!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Notes',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.textTheme.labelLarge?.color,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  appointment.notes!,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final confirm = await _showConfirmDialog(
+                        context,
+                        'Cancel Appointment',
+                        'Are you sure you want to cancel this appointment?',
+                      );
+                      if (confirm == true) {
+                        await ref.read(appointmentNotifierProvider.notifier)
+                            .cancelAppointment(appointment.id);
+                        if (context.mounted) Navigator.pop(context);
+                      }
+                    },
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: const Text('Cancel'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: PawThemeData.alertRed,
+                      side: BorderSide(color: PawThemeData.alertRed),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      await ref.read(appointmentNotifierProvider.notifier)
+                          .markAsCompleted(appointment.id);
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Complete'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: PawThemeData.successGreen,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    ThemeData theme,
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 70,
+            child: Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.textTheme.labelLarge?.color,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _showConfirmDialog(
+    BuildContext context,
+    String title,
+    String content,
+  ) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: PawThemeData.alertRed),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(DateTime date) {
+    final hour = date.hour;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '$displayHour:$minute $period';
+  }
+
+  IconData _getAppointmentTypeIcon(String? type) {
+    switch (type) {
+      case 'vet':
+        return Icons.medical_services;
+      case 'grooming':
+        return Icons.content_cut;
+      case 'training':
+        return Icons.school;
+      default:
+        return Icons.event;
+    }
   }
 
   Widget _buildVaccineSummary(BuildContext context) {
