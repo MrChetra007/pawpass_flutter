@@ -484,7 +484,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             appointments
                 .where(
                   (a) =>
-                      a.status == 'upcoming' &&
+                      a.status != 'cancelled' &&
                       a.datetime.isAfter(DateTime.now()),
                 )
                 .toList()

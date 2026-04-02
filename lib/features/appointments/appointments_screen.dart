@@ -125,14 +125,14 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
                     children: [
                       _buildAppointmentsList(
                         filteredAppointments
-                            .where((a) => a.status == 'upcoming')
+                            .where((a) => a.status == 'upcoming' && a.datetime.isAfter(DateTime.now()))
                             .toList(),
                         'upcoming',
                         petsAsync,
                       ),
                       _buildAppointmentsList(
                         filteredAppointments
-                            .where((a) => a.status != 'upcoming')
+                            .where((a) => a.status != 'upcoming' || a.datetime.isBefore(DateTime.now()))
                             .toList(),
                         'past',
                         petsAsync,
@@ -263,6 +263,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
   Widget _buildAppointmentCard(Appointment appointment, AsyncValue<List> petsAsync) {
     final theme = Theme.of(context);
     final isPast = appointment.status != 'upcoming';
+    final isOverdue = appointment.status == 'upcoming' && appointment.datetime.isBefore(DateTime.now());
 
     Color borderColor;
     switch (appointment.status) {
@@ -273,8 +274,8 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
         borderColor = Colors.grey;
         break;
       default:
-        borderColor = appointment.datetime.isBefore(DateTime.now())
-            ? Colors.red
+        borderColor = isOverdue
+            ? PawThemeData.alertRed
             : theme.colorScheme.primary;
     }
 
@@ -284,204 +285,245 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
       if (pet != null) petName = pet.name;
     });
 
-    return Dismissible(
-      key: Key(appointment.id),
-      background: Container(
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: 20),
-        decoration: BoxDecoration(
-          color: PawThemeData.successGreen,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Icon(Icons.check, color: Colors.white),
-      ),
-      secondaryBackground: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Icon(Icons.cancel, color: Colors.white),
-      ),
-      confirmDismiss: (direction) async {
-        if (direction == DismissDirection.startToEnd) {
-          await ref
-              .read(appointmentNotifierProvider.notifier)
-              .markAsCompleted(appointment.id);
-          return false;
-        } else {
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Cancel Appointment'),
-              content: const Text('Are you sure you want to cancel this appointment?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('No'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Yes, Cancel'),
-                ),
-              ],
-            ),
-          );
-          if (confirm == true) {
-            await ref
-                .read(appointmentNotifierProvider.notifier)
-                .cancelAppointment(appointment.id);
-          }
-          return false;
+    return GestureDetector(
+      onTap: () => _showEditAppointment(appointment),
+      onHorizontalDragEnd: (details) {
+        if (details.primaryVelocity != null && details.primaryVelocity! > 200) {
+          _markAsCompleted(appointment.id);
+        } else if (details.primaryVelocity != null && details.primaryVelocity! < -200) {
+          _showCancelDialog(appointment.id);
         }
       },
-      child: GestureDetector(
-        onTap: () => _showEditAppointment(appointment),
-        child: Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 15,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border(
-              left: BorderSide(color: borderColor, width: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
             ),
+          ],
+          border: Border(
+            left: BorderSide(color: borderColor, width: 4),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: borderColor.withValues(alpha: 0.1),
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                ),
-                child: Icon(
-                  _getTypeIcon(appointment.type),
-                  color: borderColor,
-                  size: 24,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: borderColor.withValues(alpha: 0.1),
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              appointment.title,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                decoration: isPast ? TextDecoration.lineThrough : null,
-                                color: isPast ? theme.textTheme.labelLarge?.color : null,
-                              ),
+              child: Icon(
+                _getTypeIcon(appointment.type),
+                color: borderColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            appointment.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              decoration: isPast ? TextDecoration.lineThrough : null,
+                              color: isPast ? theme.textTheme.labelLarge?.color : null,
                             ),
                           ),
-                          if (appointment.status == 'cancelled')
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'Cancelled',
-                                style: TextStyle(
-                                  fontSize: 10, 
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.pets,
-                            size: 14,
+                        ),
+                        _buildStatusChip(appointment, theme, isOverdue),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.pets,
+                          size: 14,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          petName,
+                          style: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.primary,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            petName,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat('MMM d, yyyy').format(appointment.datetime),
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat('h:mm a').format(appointment.datetime),
+                          style: theme.textTheme.labelMedium,
+                        ),
+                      ],
+                    ),
+                    if (appointment.clinicName != null) ...[
                       const SizedBox(height: 6),
                       Row(
                         children: [
                           Icon(
-                            Icons.calendar_today,
+                            Icons.location_on,
                             size: 14,
                             color: theme.textTheme.labelMedium?.color,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            DateFormat('MMM d, yyyy').format(appointment.datetime),
-                            style: theme.textTheme.labelMedium,
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(
-                            Icons.access_time,
-                            size: 14,
-                            color: theme.textTheme.labelMedium?.color,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            DateFormat('h:mm a').format(appointment.datetime),
-                            style: theme.textTheme.labelMedium,
+                          Expanded(
+                            child: Text(
+                              appointment.clinicName!,
+                              style: theme.textTheme.labelMedium,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
-                      if (appointment.clinicName != null) ...[
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 14,
-                              color: theme.textTheme.labelMedium?.color,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                appointment.clinicName!,
-                                style: theme.textTheme.labelMedium,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (appointment.status == 'upcoming')
+                  _ActionButton(
+                    icon: Icons.check_circle_outline,
+                    color: PawThemeData.successGreen,
+                    onTap: () => _markAsCompleted(appointment.id),
+                    tooltip: 'Mark as completed',
+                  ),
+                if (appointment.status == 'upcoming')
+                  const SizedBox(height: 8),
+                if (appointment.status == 'upcoming')
+                  _ActionButton(
+                    icon: Icons.cancel_outlined,
+                    color: PawThemeData.alertRed,
+                    onTap: () => _showCancelDialog(appointment.id),
+                    tooltip: 'Cancel',
+                  ),
+              ],
+            ),
+            const SizedBox(width: 8),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildStatusChip(Appointment appointment, ThemeData theme, bool isOverdue) {
+    if (appointment.status == 'cancelled') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.grey.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text(
+          'Cancelled',
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+    if (appointment.status == 'completed') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: PawThemeData.successGreen.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'Completed',
+          style: TextStyle(
+            fontSize: 10,
+            color: PawThemeData.successGreen,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+    if (isOverdue) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: PawThemeData.alertRed.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text(
+          'Overdue',
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.red,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+    return const SizedBox();
+  }
+
+  void _markAsCompleted(String id) async {
+    await ref.read(appointmentNotifierProvider.notifier).markAsCompleted(id);
+  }
+
+  void _showCancelDialog(String id) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Appointment'),
+        content: const Text('Are you sure you want to cancel this appointment?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: PawThemeData.alertRed),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await ref.read(appointmentNotifierProvider.notifier).cancelAppointment(id);
+    }
   }
 
   IconData _getTypeIcon(String? type) {
@@ -632,6 +674,76 @@ class _AnimatedFabState extends State<_AnimatedFab> with SingleTickerProviderSta
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: const Icon(Icons.add, size: 28),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final String tooltip;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    required this.tooltip,
+  });
+
+  @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: widget.tooltip,
+      child: GestureDetector(
+        onTapDown: (_) => _controller.forward(),
+        onTapUp: (_) {
+          _controller.reverse();
+          widget.onTap();
+        },
+        onTapCancel: () => _controller.reverse(),
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: widget.color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              widget.icon,
+              color: widget.color,
+              size: 20,
+            ),
+          ),
+        ),
       ),
     );
   }
