@@ -9,7 +9,7 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _notifications =
+  final FlutterLocalNotificationsPlugin notifications =
       FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
 
@@ -34,8 +34,8 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _notifications.initialize(
-      settings: initSettings, // ✅
+    await notifications.initialize(
+      settings: initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
@@ -48,14 +48,14 @@ class NotificationService {
 
   Future<bool> requestPermission() async {
     if (Platform.isAndroid) {
-      final android = _notifications
+      final android = notifications
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
       final granted = await android?.requestNotificationsPermission();
       return granted ?? false;
     } else if (Platform.isIOS) {
-      final ios = _notifications
+      final ios = notifications
           .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin
           >();
@@ -91,7 +91,7 @@ class NotificationService {
 
     if (notificationDate.isBefore(DateTime.now())) return;
 
-    await _notifications.zonedSchedule(
+    await notifications.zonedSchedule(
       id: _generateId('apt', appointmentId),
       title: 'Appointment Reminder',
       body: '$petName - $title is tomorrow!',
@@ -126,7 +126,7 @@ class NotificationService {
 
     if (notificationDate.isBefore(DateTime.now())) return;
 
-    await _notifications.zonedSchedule(
+    await notifications.zonedSchedule(
       id: _generateId('vac', vaccineId),
       title: 'Vaccine Due Soon',
       body: '$petName - $vaccineName is due in 7 days',
@@ -152,15 +152,15 @@ class NotificationService {
   }
 
   Future<void> cancelAppointmentReminder(String appointmentId) async {
-    await _notifications.cancel(id: _generateId('apt', appointmentId));
+    await notifications.cancel(id: _generateId('apt', appointmentId));
   }
 
   Future<void> cancelVaccineReminder(String vaccineId) async {
-    await _notifications.cancel(id: _generateId('vac', vaccineId));
+    await notifications.cancel(id: _generateId('vac', vaccineId));
   }
 
   Future<void> cancelAllNotifications() async {
-    await _notifications.cancelAll();
+    await notifications.cancelAll();
   }
 
   int _generateId(String prefix, String id) {

@@ -19,6 +19,7 @@ import '../../features/medications/add_edit_medication_screen.dart';
 import '../../features/weight/weight_history_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/theme_picker_screen.dart';
+import '../../features/profile/test_notifications_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -101,6 +102,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile/themes',
             builder: (context, state) => const ThemePickerScreen(),
+          ),
+          GoRoute(
+            path: '/profile/test-notifications',
+            builder: (context, state) => const TestNotificationsScreen(),
           ),
         ],
       ),

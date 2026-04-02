@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/date_utils.dart';
-import '../../shared/providers/user_provider.dart';
+import '../../data/models/vaccine_model.dart';
+import '../../shared/providers/pet_provider.dart';
+import '../../shared/providers/vaccine_provider.dart';
+import '../../shared/providers/appointment_provider.dart';
+import '../../shared/providers/medication_provider.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/medications/medications_list_screen.dart';
 
@@ -14,8 +18,22 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  void _loadData() {
+    Future.microtask(() {
+      ref.read(petNotifierProvider.notifier).loadPets();
+      ref.read(vaccineNotifierProvider.notifier).loadVaccines();
+      ref.read(appointmentNotifierProvider.notifier).loadAppointments();
+      ref.read(medicationNotifierProvider.notifier).loadMedications();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final user = ref.watch(userProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -28,11 +46,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               style: theme.textTheme.labelMedium,
             ),
             Text(
-              user.when(
-                data: (u) => u?.fullName ?? 'Pet Lover',
-                loading: () => '...',
-                error: (_, __) => 'Pet Lover',
-              ),
+              'Pet Lover',
               style: theme.textTheme.titleLarge,
             ),
           ],
@@ -46,7 +60,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(userProvider);
+          ref.invalidate(petNotifierProvider);
+          ref.invalidate(vaccineNotifierProvider);
+          ref.invalidate(appointmentNotifierProvider);
+          ref.invalidate(medicationNotifierProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -56,7 +73,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               _buildActivePetCard(context),
               const SizedBox(height: 24),
-              _buildSectionHeader(context, 'Upcoming Appointments'),
+              _buildSectionHeader(
+                context,
+                'Upcoming Appointments',
+                onViewAll: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const VaccinesListScreen()),
+                ),
+              ),
               const SizedBox(height: 12),
               _buildAppointmentsSection(context),
               const SizedBox(height: 24),
@@ -112,7 +136,98 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildActivePetCard(BuildContext context) {
     final theme = Theme.of(context);
+    final petsAsync = ref.watch(petNotifierProvider);
 
+    return petsAsync.when(
+      loading: () => _buildPetCardLoading(theme),
+      error: (_, __) => _buildAddPetCard(theme),
+      data: (pets) {
+        if (pets.isEmpty) {
+          return _buildAddPetCard(theme);
+        }
+        
+        final totalPets = pets.length;
+        final males = pets.where((p) => p.gender?.toLowerCase() == 'male').length;
+        final females = pets.where((p) => p.gender?.toLowerCase() == 'female').length;
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary,
+                theme.colorScheme.primary.withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildPetStat(theme, '🐶🐱', '$totalPets', 'Total'),
+              _buildPetStat(theme, '♂️', '$males', 'Male'),
+              _buildPetStat(theme, '♀️', '$females', 'Female'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPetStat(ThemeData theme, String emoji, String count, String label) {
+    return Column(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 28)),
+        const SizedBox(height: 8),
+        Text(
+          count,
+          style: theme.textTheme.headlineMedium?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: Colors.white.withValues(alpha: 0.8),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPetCardLoading(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(3, (index) => Container(
+          width: 60,
+          height: 70,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.secondary.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        )),
+      ),
+    );
+  }
+
+  Widget _buildAddPetCard(ThemeData theme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -183,19 +298,78 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildAppointmentsSection(BuildContext context) {
-    final theme = Theme.of(context);
+    final appointmentsAsync = ref.watch(appointmentNotifierProvider);
 
-    return SizedBox(
-      height: 120,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
+    return appointmentsAsync.when(
+      loading: () => _buildAppointmentsLoading(),
+      error: (_, __) => _buildNoAppointments(),
+      data: (appointments) {
+        final upcomingAppointments = appointments
+            .where((a) => a.status == 'upcoming' && a.datetime.isAfter(DateTime.now()))
+            .toList()
+          ..sort((a, b) => a.datetime.compareTo(b.datetime));
+
+        if (upcomingAppointments.isEmpty) {
+          return _buildNoAppointments();
+        }
+
+        return Column(
+          children: upcomingAppointments.take(3).map((apt) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildAppointmentCard(
+                context,
+                apt.title,
+                apt.datetime,
+                Icons.calendar_today,
+                Theme.of(context).colorScheme.primary,
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildAppointmentsLoading() {
+    return Column(
+      children: List.generate(2, (index) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Container(
+          width: double.infinity,
+          height: 72,
+          decoration: BoxDecoration(
+            color: Colors.grey.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      )),
+    );
+  }
+
+  Widget _buildNoAppointments() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Row(
         children: [
-          _buildAppointmentCard(
-            context,
-            'No upcoming appointments',
-            null,
+          Icon(
             Icons.calendar_today,
-            theme.textTheme.labelLarge?.color ?? Colors.grey,
+            color: Theme.of(context).textTheme.labelLarge?.color ?? Colors.grey,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'No upcoming appointments',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
         ],
       ),
@@ -210,8 +384,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     Color color,
   ) {
     return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 12),
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -223,37 +396,137 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (date != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              AppDateUtils.formatShortDate(date),
-              style: Theme.of(context).textTheme.labelMedium,
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (date != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    AppDateUtils.formatShortDate(date),
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildVaccineSummary(BuildContext context) {
-    final theme = Theme.of(context);
+    final vaccinesAsync = ref.watch(vaccineNotifierProvider);
 
+    return vaccinesAsync.when(
+      loading: () => _buildVaccineSummaryLoading(context),
+      error: (_, __) => _buildVaccineSummaryEmpty(context),
+      data: (vaccines) {
+        final activeVaccines = vaccines.where((v) => v.isActive).toList();
+        
+        int upToDate = 0;
+        int dueSoon = 0;
+        int overdue = 0;
+
+        for (final v in activeVaccines) {
+          switch (v.status) {
+            case VaccineStatus.upToDate:
+              upToDate++;
+              break;
+            case VaccineStatus.dueSoon:
+              dueSoon++;
+              break;
+            case VaccineStatus.overdue:
+              overdue++;
+              break;
+            default:
+              break;
+          }
+        }
+
+        if (activeVaccines.isEmpty) {
+          return _buildVaccineSummaryEmpty(context);
+        }
+
+        return _buildVaccineSummaryContent(context, upToDate, dueSoon, overdue);
+      },
+    );
+  }
+
+  Widget _buildVaccineSummaryLoading(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Row(
+        children: List.generate(3, (index) {
+          return Expanded(
+            child: Column(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 30,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  width: 60,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildVaccineSummaryEmpty(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -270,14 +543,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               'Up to date',
               '0',
               Icons.check_circle,
-              theme.colorScheme.primary,
+              Theme.of(context).colorScheme.primary,
             ),
           ),
-          Container(
-            width: 1,
-            height: 40,
-            color: theme.dividerTheme.color,
-          ),
+          Container(width: 1, height: 40, color: Theme.of(context).dividerTheme.color),
           Expanded(
             child: _buildVaccineChip(
               context,
@@ -287,18 +556,63 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Colors.orange,
             ),
           ),
-          Container(
-            width: 1,
-            height: 40,
-            color: theme.dividerTheme.color,
-          ),
+          Container(width: 1, height: 40, color: Theme.of(context).dividerTheme.color),
           Expanded(
             child: _buildVaccineChip(
               context,
               'Overdue',
               '0',
               Icons.error,
-              theme.colorScheme.error,
+              Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVaccineSummaryContent(BuildContext context, int upToDate, int dueSoon, int overdue) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildVaccineChip(
+              context,
+              'Up to date',
+              upToDate.toString(),
+              Icons.check_circle,
+              Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          Container(width: 1, height: 40, color: Theme.of(context).dividerTheme.color),
+          Expanded(
+            child: _buildVaccineChip(
+              context,
+              'Due soon',
+              dueSoon.toString(),
+              Icons.schedule,
+              Colors.orange,
+            ),
+          ),
+          Container(width: 1, height: 40, color: Theme.of(context).dividerTheme.color),
+          Expanded(
+            child: _buildVaccineChip(
+              context,
+              'Overdue',
+              overdue.toString(),
+              Icons.error,
+              Theme.of(context).colorScheme.error,
             ),
           ),
         ],
@@ -340,6 +654,77 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildMedicationsSection(BuildContext context) {
+    final medicationsAsync = ref.watch(medicationNotifierProvider);
+
+    return medicationsAsync.when(
+      loading: () => _buildMedicationsLoading(context),
+      error: (_, __) => _buildMedicationsEmpty(context),
+      data: (medications) {
+        final activeMedications = medications.where((m) => m.isActive).toList();
+        
+        if (activeMedications.isEmpty) {
+          return _buildMedicationsEmpty(context);
+        }
+
+        return _buildMedicationsContent(context, activeMedications);
+      },
+    );
+  }
+
+  Widget _buildMedicationsLoading(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 120,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 80,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMedicationsEmpty(BuildContext context) {
     final theme = Theme.of(context);
 
     return Container(
@@ -392,9 +777,67 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildMedicationsContent(BuildContext context, List medications) {
     final theme = Theme.of(context);
+    final displayMeds = medications.take(3).toList();
 
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.medication,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${medications.length} active medication${medications.length > 1 ? 's' : ''}',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    Text(
+                      displayMeds.map((m) => m.name).join(', '),
+                      style: theme.textTheme.labelMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: theme.textTheme.labelLarge?.color,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context) {
     return Row(
       children: [
         Expanded(
