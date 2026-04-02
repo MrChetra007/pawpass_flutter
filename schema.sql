@@ -347,6 +347,10 @@ insert into storage.buckets (id, name, public)
   values ('vet-documents', 'vet-documents', false)
   on conflict do nothing;
 
+insert into storage.buckets (id, name, public)
+  values ('avatars', 'avatars', true)
+  on conflict do nothing;
+
 drop policy if exists "Users can upload own pet photos"    on storage.objects;
 drop policy if exists "Anyone can view pet photos"         on storage.objects;
 drop policy if exists "Users can upload own vet documents" on storage.objects;
@@ -372,6 +376,14 @@ create policy "Users can view own vet documents"
 create policy "Users can delete own files"
   on storage.objects for delete
   using (auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "Users can upload own avatars"
+  on storage.objects for insert
+  with check (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "Anyone can view avatars"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
 
 
 -- ============================================================

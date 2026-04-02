@@ -49,8 +49,6 @@ class FeatureGate {
         return isPro;
       case 'pdf_export':
         return isFamily;
-      case 'family_sharing':
-        return isFamily;
       case 'multiple_pets':
         return isPro;
       case 'unlimited_pets':
@@ -103,8 +101,6 @@ class PlanUtils {
       case 'push_notifications':
         return isPro;
       case 'pdf_export':
-        return isFamily;
-      case 'family_sharing':
         return isFamily;
       case 'multiple_pets':
         return isPro;

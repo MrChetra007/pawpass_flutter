@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/date_utils.dart';
+import '../../core/utils/feature_gate.dart';
 import '../../data/models/vaccine_model.dart';
 import '../../shared/providers/pet_provider.dart';
 import '../../shared/providers/vaccine_provider.dart';
@@ -8,6 +9,7 @@ import '../../shared/providers/appointment_provider.dart';
 import '../../shared/providers/medication_provider.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/medications/medications_list_screen.dart';
+import '../../features/appointments/appointments_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -148,12 +150,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         _buildSectionHeader(
                           context,
                           'Upcoming',
-                          onViewAll: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const VaccinesListScreen(),
-                            ),
-                          ),
                         ),
                         const SizedBox(height: 12),
                         _buildAppointmentsSection(context),
@@ -507,6 +503,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 apt.datetime,
                 Icons.calendar_today,
                 Theme.of(context).colorScheme.primary,
+                onTap: () async {
+                  final hasAccess = await FeatureGate.check(
+                    context: context,
+                    ref: ref,
+                    feature: 'appointments',
+                    customMessage: 'View appointments with Paw Plan',
+                  );
+                  if (hasAccess && context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AppointmentsScreen(),
+                      ),
+                    );
+                  }
+                },
               ),
             );
           }).toList(),
@@ -568,10 +580,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     String title,
     DateTime? date,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    VoidCallback? onTap,
+  }) {
     final theme = Theme.of(context);
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -644,6 +659,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
         ],
       ),
+    ),
     );
   }
 

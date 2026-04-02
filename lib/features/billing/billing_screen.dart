@@ -12,7 +12,8 @@ class BillingScreen extends ConsumerStatefulWidget {
   ConsumerState<BillingScreen> createState() => _BillingScreenState();
 }
 
-class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTickerProviderStateMixin {
+class _BillingScreenState extends ConsumerState<BillingScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -61,9 +62,15 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Subscription', style: theme.textTheme.headlineMedium),
+                      Text(
+                        'Subscription',
+                        style: theme.textTheme.headlineMedium,
+                      ),
                       const SizedBox(height: 4),
-                      Text('Choose the perfect plan for you', style: theme.textTheme.labelLarge),
+                      Text(
+                        'Choose the perfect plan for you',
+                        style: theme.textTheme.labelLarge,
+                      ),
                     ],
                   ),
                 ),
@@ -77,7 +84,8 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
                 FadeTransition(
                   opacity: _fadeAnimation,
                   child: userAsync.when(
-                    data: (user) => _buildCurrentPlanBadge(context, user?.plan ?? 'free'),
+                    data: (user) =>
+                        _buildCurrentPlanBadge(context, user?.plan ?? 'free'),
                     loading: () => const SizedBox(),
                     error: (_, __) => const SizedBox(),
                   ),
@@ -117,7 +125,6 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
                       'Unlimited pets',
                       'Everything in Paw Plan',
                       'PDF passport export',
-                      'Family sharing',
                       'Priority support',
                     ],
                     notIncluded: const [],
@@ -184,7 +191,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: plan == 'free' 
+              color: plan == 'free'
                   ? theme.colorScheme.primary.withValues(alpha: 0.1)
                   : theme.colorScheme.primary,
               borderRadius: BorderRadius.circular(14),
@@ -200,10 +207,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Current Plan',
-                  style: theme.textTheme.labelMedium,
-                ),
+                Text('Current Plan', style: theme.textTheme.labelMedium),
                 const SizedBox(height: 4),
                 Text(
                   planName,
@@ -220,7 +224,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: BorderRadius.circular(100),
-              border: plan == 'free' 
+              border: plan == 'free'
                   ? Border.all(color: theme.dividerTheme.color ?? Colors.grey)
                   : null,
             ),
@@ -250,14 +254,14 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(24),
-          border: isPopular 
+          border: isPopular
               ? Border.all(color: theme.colorScheme.primary, width: 2)
               : null,
           boxShadow: [
@@ -313,10 +317,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            description,
-                            style: theme.textTheme.labelMedium,
-                          ),
+                          Text(description, style: theme.textTheme.labelMedium),
                         ],
                       ),
                       Column(
@@ -332,10 +333,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
                                   color: theme.colorScheme.primary,
                                 ),
                               ),
-                              Text(
-                                period,
-                                style: theme.textTheme.labelMedium,
-                              ),
+                              Text(period, style: theme.textTheme.labelMedium),
                             ],
                           ),
                         ],
@@ -343,55 +341,63 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
                     ],
                   ),
                   const SizedBox(height: 20),
-                  ...features.map((feature) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: PawThemeData.successGreen.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.check,
-                            size: 14,
-                            color: PawThemeData.successGreen,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            feature,
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
-                  if (notIncluded.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    ...notIncluded.map((feature) => Padding(
+                  ...features.map(
+                    (feature) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.close,
-                            size: 16,
-                            color: theme.textTheme.labelLarge?.color?.withValues(alpha: 0.5),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: PawThemeData.successGreen.withValues(
+                                alpha: 0.1,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.check,
+                              size: 14,
+                              color: PawThemeData.successGreen,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               feature,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.textTheme.labelLarge?.color?.withValues(alpha: 0.5),
-                              ),
+                              style: theme.textTheme.bodyMedium,
                             ),
                           ),
                         ],
                       ),
-                    )),
+                    ),
+                  ),
+                  if (notIncluded.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    ...notIncluded.map(
+                      (feature) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.close,
+                              size: 16,
+                              color: theme.textTheme.labelLarge?.color
+                                  ?.withValues(alpha: 0.5),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                feature,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.textTheme.labelLarge?.color
+                                      ?.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 16),
                   SizedBox(
@@ -399,11 +405,11 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
                     child: ElevatedButton(
                       onPressed: onTap,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isPopular 
-                            ? theme.colorScheme.primary 
+                        backgroundColor: isPopular
+                            ? theme.colorScheme.primary
                             : theme.colorScheme.primary.withValues(alpha: 0.1),
-                        foregroundColor: isPopular 
-                            ? Colors.white 
+                        foregroundColor: isPopular
+                            ? Colors.white
                             : theme.colorScheme.primary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -411,7 +417,9 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
                         ),
                       ),
                       child: Text(
-                        title == 'Paw Plan' ? 'Upgrade to Paw Plan' : 'Upgrade to Family Plan',
+                        title == 'Paw Plan'
+                            ? 'Upgrade to Paw Plan'
+                            : 'Upgrade to Family Plan',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -427,7 +435,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
 
   Widget _buildRestoreSection(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -446,7 +454,9 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
         children: [
           Text(
             'Restore Purchases',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -476,7 +486,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
 
   Widget _buildManageSubscriptionSection(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -495,7 +505,9 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
         children: [
           Text(
             'Manage Subscription',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -512,7 +524,8 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
                   context,
                   icon: Icons.apple,
                   label: 'App Store',
-                  onTap: () => _openUrl('https://apps.apple.com/account/subscriptions'),
+                  onTap: () =>
+                      _openUrl('https://apps.apple.com/account/subscriptions'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -521,7 +534,9 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
                   context,
                   icon: Icons.play_arrow,
                   label: 'Play Store',
-                  onTap: () => _openUrl('https://play.google.com/store/account/subscriptions'),
+                  onTap: () => _openUrl(
+                    'https://play.google.com/store/account/subscriptions',
+                  ),
                 ),
               ),
             ],
@@ -538,7 +553,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -567,7 +582,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
 
   void _showUpgradeDialog(String plan) {
     final theme = Theme.of(context);
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: theme.colorScheme.surface,
@@ -595,7 +610,9 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
             const SizedBox(height: 20),
             Text(
               'Switch to ${plan == "pro" ? "Paw Plan" : "Family Plan"}',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
@@ -646,11 +663,11 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
     final theme = Theme.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final screenContext = context;
-    
+
     Navigator.pop(context);
-    
+
     await Future.delayed(const Duration(milliseconds: 200));
-    
+
     scaffoldMessenger.showSnackBar(
       SnackBar(
         content: const Text('Switching plan...'),
@@ -661,22 +678,25 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
     try {
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
-      
+
       if (user != null) {
-        await supabase
-            .from('users')
-            .update({'plan': plan})
-            .eq('id', user.id);
+        await supabase.from('users').update({'plan': plan}).eq('id', user.id);
         
+        await Future.delayed(const Duration(milliseconds: 100));
         ref.invalidate(userProvider);
-        
+        ref.invalidate(subscriptionProvider);
+
         scaffoldMessenger.hideCurrentSnackBar();
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Successfully switched to ${plan == "pro" ? "Paw Plan" : "Family Plan"}!'),
+            content: Text(
+              'Successfully switched to ${plan == "pro" ? "Paw Plan" : "Family Plan"}!',
+            ),
             backgroundColor: PawThemeData.successGreen,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       } else {
@@ -701,17 +721,15 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
 
   Future<void> _restorePurchases() async {
     final theme = Theme.of(context);
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -719,7 +737,9 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
           content: const Text('No previous purchases found'),
           backgroundColor: theme.colorScheme.primary,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     }

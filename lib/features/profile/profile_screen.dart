@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../core/theme/app_theme_data.dart';
 import '../../shared/providers/auth_notifier.dart';
-import '../../shared/providers/user_provider.dart';
+import '../../shared/providers/user_provider.dart' as up;
 import '../../shared/providers/theme_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -30,6 +33,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) _animationController.forward();
     });
+    Future.microtask(() {
+      ref.invalidate(up.userProvider);
+    });
   }
 
   @override
@@ -40,7 +46,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(userProvider);
+    final user = ref.watch(up.userProvider);
     final theme = Theme.of(context);
     final currentTheme = ref.watch(themeNotifierProvider);
     final themeData = PawThemeData.all[currentTheme]!;
@@ -145,31 +151,60 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
           user.when(
             data: (u) => Column(
               children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.primary.withValues(alpha: 0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                GestureDetector(
+                  onTap: () => _showEditProfileDialog(context, u),
+                  child: Stack(
+                    children: [
+                      u?.avatarUrl != null && u!.avatarUrl!.isNotEmpty
+                          ? CircleAvatar(
+                              radius: 40,
+                              backgroundImage: NetworkImage(u.avatarUrl!),
+                            )
+                          : Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    theme.colorScheme.primary,
+                                    theme.colorScheme.primary.withValues(alpha: 0.7),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.person,
+                                size: 40,
+                                color: Colors.white,
+                              ),
+                            ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ],
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    size: 40,
-                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -468,5 +503,189 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
         ),
       ),
     );
+  }
+
+  void _showEditProfileDialog(BuildContext context, up.User? user) {
+    final nameController = TextEditingController(text: user?.fullName ?? '');
+    final theme = Theme.of(context);
+    File? selectedAvatar;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Edit Profile',
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 24),
+              Center(
+                child: GestureDetector(
+                  onTap: () async {
+                    final picker = ImagePicker();
+                    final image = await picker.pickImage(
+                      source: ImageSource.gallery,
+                      maxWidth: 500,
+                      maxHeight: 500,
+                    );
+                    if (image != null) {
+                      setState(() {
+                        selectedAvatar = File(image.path);
+                      });
+                    }
+                  },
+                  child: Stack(
+                    children: [
+                      selectedAvatar != null
+                          ? CircleAvatar(
+                              radius: 40,
+                              backgroundImage: FileImage(selectedAvatar!),
+                            )
+                          : user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                              ? CircleAvatar(
+                                  radius: 40,
+                                  backgroundImage: NetworkImage(user.avatarUrl!),
+                                )
+                              : Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 40,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Full Name',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => _updateProfile(context, nameController.text.trim(), selectedAvatar),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _updateProfile(BuildContext context, String fullName, File? avatar) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final screenContext = context;
+    
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      
+      if (user != null) {
+        String? avatarUrl;
+        
+        if (avatar != null) {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(content: Text('Uploading avatar...')),
+          );
+          
+          final fileName = '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}';
+          
+          await supabase.storage
+            .from('avatars')
+            .upload(fileName, avatar);
+          
+          avatarUrl = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+        }
+        
+        final updateData = {
+          'full_name': fullName,
+          if (avatarUrl != null) 'avatar_url': avatarUrl,
+        };
+        
+        await supabase
+            .from('users')
+            .update(updateData)
+            .eq('id', user.id);
+        
+        ref.invalidate(up.userProvider);
+        
+        if (mounted) {
+          Navigator.pop(screenContext);
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: const Text('Profile updated!'),
+              backgroundColor: PawThemeData.successGreen,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 }
