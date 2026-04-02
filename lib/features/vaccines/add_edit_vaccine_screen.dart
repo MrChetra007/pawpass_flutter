@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 import '../../shared/providers/vaccine_provider.dart';
+import '../../core/utils/feature_gate.dart';
 
 class AddEditVaccineScreen extends ConsumerStatefulWidget {
   final String petId;
@@ -28,6 +32,11 @@ class _AddEditVaccineScreenState extends ConsumerState<AddEditVaccineScreen> {
   DateTime _dateGiven = DateTime.now();
   DateTime? _nextDueDate;
   bool _isLoading = false;
+  
+  File? _selectedFile;
+  String? _selectedFileName;
+  String? _docUrl;
+  bool _isUploading = false;
 
   bool get isEditing => widget.vaccine != null;
 
@@ -42,6 +51,7 @@ class _AddEditVaccineScreenState extends ConsumerState<AddEditVaccineScreen> {
       _clinicController.text = widget.vaccine.clinicName ?? '';
       _batchController.text = widget.vaccine.batchNumber ?? '';
       _notesController.text = widget.vaccine.notes ?? '';
+      _docUrl = widget.vaccine.docUrl;
     }
   }
 
@@ -53,6 +63,70 @@ class _AddEditVaccineScreenState extends ConsumerState<AddEditVaccineScreen> {
     _batchController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickFile() async {
+    final hasAccess = await FeatureGate.check(
+      context: context,
+      ref: ref,
+      feature: 'file_upload',
+      showModal: true,
+    );
+    
+    if (!hasAccess) return;
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _selectedFile = File(result.files.first.path!);
+          _selectedFileName = result.files.first.name;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking file: $e')),
+        );
+      }
+    }
+  }
+
+  Future<String?> _uploadFile() async {
+    if (_selectedFile == null) return _docUrl;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user == null) throw Exception('Not authenticated');
+
+      final fileName = '${user.id}/${DateTime.now().millisecondsSinceEpoch}_${_selectedFileName}';
+      
+      await supabase.storage
+        .from('vet-documents')
+        .upload(fileName, _selectedFile!);
+
+      final url = supabase.storage
+        .from('vet-documents')
+        .getPublicUrl(fileName);
+
+      setState(() => _isUploading = false);
+      return url;
+    } catch (e) {
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading file: $e')),
+        );
+      }
+      return null;
+    }
   }
 
   Future<void> _selectDateGiven() async {
@@ -85,6 +159,18 @@ class _AddEditVaccineScreenState extends ConsumerState<AddEditVaccineScreen> {
     setState(() => _isLoading = true);
 
     try {
+      String? uploadedDocUrl;
+      
+      if (_selectedFile != null) {
+        uploadedDocUrl = await _uploadFile();
+        if (uploadedDocUrl == null) {
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      final docUrlToSave = uploadedDocUrl ?? _docUrl;
+
       if (isEditing) {
         await ref.read(vaccineNotifierProvider.notifier).updateVaccine(
               widget.vaccine.id,
@@ -104,6 +190,7 @@ class _AddEditVaccineScreenState extends ConsumerState<AddEditVaccineScreen> {
                 'notes': _notesController.text.trim().isNotEmpty
                     ? _notesController.text.trim()
                     : null,
+                'doc_url': docUrlToSave,
               },
             );
       } else {
@@ -124,6 +211,7 @@ class _AddEditVaccineScreenState extends ConsumerState<AddEditVaccineScreen> {
               notes: _notesController.text.trim().isNotEmpty
                   ? _notesController.text.trim()
                   : null,
+              docUrl: docUrlToSave,
             );
       }
 
@@ -243,6 +331,61 @@ class _AddEditVaccineScreenState extends ConsumerState<AddEditVaccineScreen> {
                 prefixIcon: Icon(Icons.notes),
                 alignLabelWithHint: true,
               ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'DOCUMENT',
+              style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 1.2),
+            ),
+            const SizedBox(height: 12),
+            if (_selectedFile != null || _docUrl != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.description,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedFile != null 
+                            ? _selectedFileName! 
+                            : _docUrl!.split('/').last,
+                        style: theme.textTheme.bodyMedium,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => setState(() {
+                        _selectedFile = null;
+                        _selectedFileName = null;
+                        _docUrl = null;
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            OutlinedButton.icon(
+              onPressed: _isUploading ? null : _pickFile,
+              icon: _isUploading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.upload_file),
+              label: Text(_selectedFile != null || _docUrl != null 
+                  ? 'Change Document' 
+                  : 'Upload Document'),
             ),
             const SizedBox(height: 32),
           ],

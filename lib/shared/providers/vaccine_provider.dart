@@ -43,6 +43,7 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
     String? vetName,
     String? clinicName,
     String? batchNumber,
+    String? docUrl,
     String? notes,
   }) async {
     try {
@@ -55,6 +56,7 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
         vetName: vetName,
         clinicName: clinicName,
         batchNumber: batchNumber,
+        docUrl: docUrl,
         notes: notes,
       );
 

@@ -61,10 +61,14 @@ class _VaccinesListScreenState extends ConsumerState<VaccinesListScreen>
             floating: true,
             pinned: true,
             backgroundColor: theme.scaffoldBackgroundColor,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+              onPressed: () => Navigator.pop(context),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(48, 16, 20, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

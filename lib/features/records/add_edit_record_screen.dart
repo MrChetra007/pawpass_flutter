@@ -1,9 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/supabase_constants.dart';
 import '../../data/models/vet_record_model.dart';
 import '../../shared/providers/record_provider.dart';
+import '../../shared/widgets/upgrade_modal.dart';
+import '../../core/utils/feature_gate.dart';
 
 class AddEditRecordScreen extends ConsumerStatefulWidget {
   final String petId;
@@ -32,6 +37,10 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
   String _selectedType = 'checkup';
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
+  String? _docUrl;
+  File? _selectedFile;
+  String? _selectedFileName;
+  bool _isUploading = false;
 
   bool get isEditing => widget.record != null;
 
@@ -48,6 +57,7 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
       _treatmentController.text = widget.record!.treatment ?? '';
       _notesController.text = widget.record!.notes ?? '';
       _costController.text = widget.record!.cost?.toString() ?? '';
+      _docUrl = widget.record!.docUrl;
     }
   }
 
@@ -75,12 +85,87 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
     }
   }
 
+  Future<void> _pickFile() async {
+    final canAccess = await FeatureGate.check(
+      context: context,
+      ref: ref,
+      feature: 'file_upload',
+      customMessage: 'Upload documents with Paw Plan',
+    );
+
+    if (!canAccess) return;
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _selectedFile = File(result.files.first.path!);
+          _selectedFileName = result.files.first.name;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking file: $e')),
+        );
+      }
+    }
+  }
+
+  Future<String?> _uploadFile() async {
+    if (_selectedFile == null) return _docUrl;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user == null) throw Exception('Not authenticated');
+
+      final fileName = '${user.id}/${DateTime.now().millisecondsSinceEpoch}_${_selectedFileName}';
+      
+      await supabase.storage
+        .from('vet-documents')
+        .upload(fileName, _selectedFile!);
+
+      final url = supabase.storage
+        .from('vet-documents')
+        .getPublicUrl(fileName);
+
+      setState(() => _isUploading = false);
+      return url;
+    } catch (e) {
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading file: $e')),
+        );
+      }
+      return null;
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
+      String? uploadedDocUrl;
+      
+      if (_selectedFile != null) {
+        uploadedDocUrl = await _uploadFile();
+        if (uploadedDocUrl == null) {
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      final docUrlToSave = uploadedDocUrl ?? _docUrl;
       final cost = _costController.text.isNotEmpty
           ? double.tryParse(_costController.text)
           : null;
@@ -107,6 +192,7 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
                 'notes': _notesController.text.trim().isNotEmpty
                     ? _notesController.text.trim()
                     : null,
+                'doc_url': docUrlToSave,
                 'cost': cost,
               },
             );
@@ -131,6 +217,7 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
               notes: _notesController.text.trim().isNotEmpty
                   ? _notesController.text.trim()
                   : null,
+              docUrl: docUrlToSave,
               cost: cost,
             );
       }
@@ -253,6 +340,8 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            _buildDocumentUpload(),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _notesController,
               maxLines: 3,
@@ -293,5 +382,112 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
       case 'lab_result': return 'Lab Result';
       default: return 'Other';
     }
+  }
+
+  Widget _buildDocumentUpload() {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.dividerTheme.color ?? Colors.grey.shade300,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.attach_file, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Document',
+                style: theme.textTheme.titleMedium,
+              ),
+              const Spacer(),
+              if (_isUploading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_selectedFile != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.description, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _selectedFileName ?? 'File',
+                      style: theme.textTheme.bodyMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: theme.colorScheme.error),
+                    onPressed: () => setState(() => _selectedFile = null),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            )
+          else if (_docUrl != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.description, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Document attached',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: theme.colorScheme.error),
+                    onPressed: () => setState(() => _docUrl = null),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: _isUploading ? null : _pickFile,
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Upload Document'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
+            ),
+          const SizedBox(height: 8),
+          Text(
+            'PDF, Images (max 10MB)',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.textTheme.labelLarge?.color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
