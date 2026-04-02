@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/date_utils.dart';
 import '../../shared/providers/user_provider.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
+import '../../features/medications/medications_list_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -70,7 +71,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 12),
               _buildVaccineSummary(context),
               const SizedBox(height: 24),
-              _buildSectionHeader(context, 'Active Medications'),
+              _buildSectionHeader(
+                context,
+                'Active Medications',
+                onViewAll: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MedicationsListScreen()),
+                ),
+              ),
               const SizedBox(height: 12),
               _buildMedicationsSection(context),
               const SizedBox(height: 24),

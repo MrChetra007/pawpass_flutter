@@ -14,6 +14,8 @@ import '../../features/appointments/appointments_screen.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/vaccines/add_edit_vaccine_screen.dart';
 import '../../features/appointments/add_edit_appointment_screen.dart';
+import '../../features/medications/medications_list_screen.dart';
+import '../../features/medications/add_edit_medication_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/theme_picker_screen.dart';
 
@@ -78,6 +80,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/appointments',
             builder: (context, state) => const AppointmentsScreen(),
+          ),
+          GoRoute(
+            path: '/medications',
+            builder: (context, state) => const MedicationsListScreen(),
           ),
           GoRoute(
             path: '/profile',
