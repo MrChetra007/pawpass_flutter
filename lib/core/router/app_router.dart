@@ -5,6 +5,12 @@ import '../../shared/providers/auth_provider.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/forgot_password_screen.dart';
+import '../../features/dashboard/dashboard_screen.dart';
+import '../../features/pets/pet_list_screen.dart';
+import '../../features/records/records_list_screen.dart';
+import '../../features/appointments/appointments_screen.dart';
+import '../../features/profile/profile_screen.dart';
+import '../../features/profile/theme_picker_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -43,33 +49,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Dashboard - Coming Soon')),
-            ),
+            builder: (context, state) => const DashboardScreen(),
           ),
           GoRoute(
             path: '/pets',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Pets Screen - Coming Soon')),
-            ),
+            builder: (context, state) => const PetListScreen(),
           ),
           GoRoute(
             path: '/records',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Records Screen - Coming Soon')),
-            ),
+            builder: (context, state) => const RecordsListScreen(),
           ),
           GoRoute(
             path: '/appointments',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Appointments Screen - Coming Soon')),
-            ),
+            builder: (context, state) => const AppointmentsScreen(),
           ),
           GoRoute(
             path: '/profile',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Profile Screen - Coming Soon')),
-            ),
+            builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: '/profile/themes',
+            builder: (context, state) => const ThemePickerScreen(),
           ),
         ],
       ),
