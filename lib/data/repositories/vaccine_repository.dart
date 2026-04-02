@@ -83,4 +83,15 @@ class VaccineRepository {
   Future<void> deleteVaccine(String id) async {
     await _supabase.from('vaccines').delete().eq('id', id);
   }
+
+  Future<Vaccine> toggleActive(String id, bool isActive) async {
+    final response = await _supabase
+        .from('vaccines')
+        .update({'is_active': isActive})
+        .eq('id', id)
+        .select()
+        .single();
+
+    return Vaccine.fromJson(response as Map<String, dynamic>);
+  }
 }

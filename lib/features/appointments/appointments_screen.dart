@@ -416,13 +416,55 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
         );
         return;
       }
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AddEditAppointmentScreen(petId: pets.first.id),
-        ),
-      );
+
+      if (_selectedPetId != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddEditAppointmentScreen(petId: _selectedPetId!),
+          ),
+        );
+      } else {
+        _showPetPicker(pets);
+      }
     });
+  }
+
+  void _showPetPicker(List pets) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Select Pet',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            ...pets.map((pet) => ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+                child: Text(pet.speciesEmoji),
+              ),
+              title: Text(pet.name),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddEditAppointmentScreen(petId: pet.id),
+                  ),
+                );
+              },
+            )),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showEditAppointment(Appointment appointment) {

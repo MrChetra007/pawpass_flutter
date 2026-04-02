@@ -93,6 +93,20 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
     }
   }
 
+  Future<void> toggleActive(String id, bool isActive) async {
+    try {
+      final repository = ref.read(vaccineRepositoryProvider);
+      final updatedVaccine = await repository.toggleActive(id, isActive);
+
+      final currentVaccines = state.value ?? [];
+      state = AsyncValue.data(
+        currentVaccines.map((v) => v.id == id ? updatedVaccine : v).toList(),
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Map<String, int> getStatusCounts() {
     final vaccines = state.value ?? [];
     return {

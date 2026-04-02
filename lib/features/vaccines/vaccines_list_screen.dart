@@ -63,7 +63,7 @@ class _VaccinesListScreenState extends ConsumerState<VaccinesListScreen> {
                     onAction: () => _showAddVaccine(petsAsync),
                   );
                 }
-                return _buildVaccinesList(filteredVaccines);
+                return _buildVaccinesList(filteredVaccines, petsAsync);
               },
             ),
           ),
@@ -140,126 +140,67 @@ class _VaccinesListScreenState extends ConsumerState<VaccinesListScreen> {
     );
   }
 
-  Widget _buildVaccinesList(List<Vaccine> vaccines) {
-    final groupedVaccines = _groupByStatus(vaccines);
+  Widget _buildVaccinesList(List<Vaccine> vaccines, AsyncValue<List> petsAsync) {
+    final activeVaccines = vaccines.where((v) => v.isActive).toList();
+    final inactiveVaccines = vaccines.where((v) => !v.isActive).toList();
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildStatusSummary(vaccines),
-        const SizedBox(height: 24),
-        if (groupedVaccines['overdue']!.isNotEmpty) ...[
-          _buildSection('OVERDUE', groupedVaccines['overdue']!, Colors.red),
-          const SizedBox(height: 16),
+        if (activeVaccines.isNotEmpty) ...[
+          _buildSectionHeader(context, 'Active', activeVaccines.length),
+          const SizedBox(height: 12),
+          ...activeVaccines.map((vaccine) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildVaccineCard(vaccine, petsAsync),
+              )),
+          const SizedBox(height: 24),
         ],
-        if (groupedVaccines['dueSoon']!.isNotEmpty) ...[
-          _buildSection('DUE SOON', groupedVaccines['dueSoon']!, Colors.orange),
-          const SizedBox(height: 16),
-        ],
-        if (groupedVaccines['upToDate']!.isNotEmpty) ...[
-          _buildSection('UP TO DATE', groupedVaccines['upToDate']!, PawThemeData.successGreen),
-          const SizedBox(height: 16),
+        if (inactiveVaccines.isNotEmpty) ...[
+          _buildSectionHeader(context, 'Inactive', inactiveVaccines.length),
+          const SizedBox(height: 12),
+          ...inactiveVaccines.map((vaccine) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildVaccineCard(vaccine, petsAsync),
+              )),
         ],
       ],
     );
   }
 
-  Widget _buildStatusSummary(List<Vaccine> vaccines) {
-    final counts = {
-      'Up to date': vaccines.where((v) => v.status == VaccineStatus.upToDate).length,
-      'Due soon': vaccines.where((v) => v.status == VaccineStatus.dueSoon).length,
-      'Overdue': vaccines.where((v) => v.status == VaccineStatus.overdue).length,
-    };
-
+  Widget _buildSectionHeader(BuildContext context, String title, int count) {
     final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: counts.entries.map((entry) {
-          Color color;
-          IconData icon;
-          switch (entry.key) {
-            case 'Overdue':
-              color = Colors.red;
-              icon = Icons.error;
-              break;
-            case 'Due soon':
-              color = Colors.orange;
-              icon = Icons.schedule;
-              break;
-            default:
-              color = PawThemeData.successGreen;
-              icon = Icons.check_circle;
-          }
-          return Column(
-            children: [
-              Icon(icon, color: color, size: 24),
-              const SizedBox(height: 8),
-              Text(
-                '${entry.value}',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              Text(
-                entry.key,
-                style: theme.textTheme.labelMedium,
-              ),
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildSection(String title, List<Vaccine> vaccines, Color color) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            Container(
-              width: 4,
-              height: 20,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(color: color),
-            ),
-          ],
+        Text(
+          title,
+          style: theme.textTheme.titleLarge,
         ),
-        const SizedBox(height: 12),
-        ...vaccines.map((vaccine) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildVaccineCard(vaccine, color),
-            )),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.secondary.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$count',
+            style: theme.textTheme.labelMedium,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildVaccineCard(Vaccine vaccine, Color statusColor) {
+  Widget _buildVaccineCard(Vaccine vaccine, AsyncValue<List> petsAsync) {
     final theme = Theme.of(context);
+    final statusColor = _getStatusColor(vaccine.status);
+
+    String petName = 'Unknown Pet';
+    petsAsync.whenData((pets) {
+      final pet = pets.where((p) => p.id == vaccine.petId).firstOrNull;
+      if (pet != null) petName = pet.name;
+    });
 
     return PawCard(
       onTap: () => _showEditVaccine(vaccine),
@@ -284,6 +225,11 @@ class _VaccinesListScreenState extends ConsumerState<VaccinesListScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
+                  petName,
+                  style: theme.textTheme.labelMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
                   'Given: ${DateFormat('MMM d, yyyy').format(vaccine.dateGiven)}',
                   style: theme.textTheme.labelMedium,
                 ),
@@ -300,9 +246,43 @@ class _VaccinesListScreenState extends ConsumerState<VaccinesListScreen> {
             ),
           ),
           StatusBadge(status: _getStatusType(vaccine.status)),
+          PopupMenuButton(
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'toggle',
+                child: Text(vaccine.isActive ? 'Mark as Inactive' : 'Mark as Active'),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text('Delete', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 'toggle') {
+                ref
+                    .read(vaccineNotifierProvider.notifier)
+                    .toggleActive(vaccine.id, !vaccine.isActive);
+              } else if (value == 'delete') {
+                _showDeleteConfirmation(vaccine);
+              }
+            },
+          ),
         ],
       ),
     );
+  }
+
+  Color _getStatusColor(VaccineStatus status) {
+    switch (status) {
+      case VaccineStatus.upToDate:
+        return PawThemeData.successGreen;
+      case VaccineStatus.dueSoon:
+        return Colors.orange;
+      case VaccineStatus.overdue:
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 
   StatusType _getStatusType(VaccineStatus status) {
@@ -318,13 +298,27 @@ class _VaccinesListScreenState extends ConsumerState<VaccinesListScreen> {
     }
   }
 
-  Map<String, List<Vaccine>> _groupByStatus(List<Vaccine> vaccines) {
-    return {
-      'overdue': vaccines.where((v) => v.status == VaccineStatus.overdue).toList(),
-      'dueSoon': vaccines.where((v) => v.status == VaccineStatus.dueSoon).toList(),
-      'upToDate': vaccines.where((v) => v.status == VaccineStatus.upToDate).toList(),
-      'unknown': vaccines.where((v) => v.status == VaccineStatus.unknown).toList(),
-    };
+  void _showDeleteConfirmation(Vaccine vaccine) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Vaccine?'),
+        content: Text('Are you sure you want to delete ${vaccine.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(vaccineNotifierProvider.notifier).deleteVaccine(vaccine.id);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAddVaccine(AsyncValue<List> petsAsync) {
@@ -335,13 +329,55 @@ class _VaccinesListScreenState extends ConsumerState<VaccinesListScreen> {
         );
         return;
       }
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AddEditVaccineScreen(petId: pets.first.id),
-        ),
-      );
+
+      if (_selectedPetId != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddEditVaccineScreen(petId: _selectedPetId!),
+          ),
+        );
+      } else {
+        _showPetPicker(pets);
+      }
     });
+  }
+
+  void _showPetPicker(List pets) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Select Pet',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            ...pets.map((pet) => ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+                child: Text(pet.speciesEmoji),
+              ),
+              title: Text(pet.name),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddEditVaccineScreen(petId: pet.id),
+                  ),
+                );
+              },
+            )),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showEditVaccine(Vaccine vaccine) {

@@ -12,6 +12,7 @@ class Vaccine {
   final String? batchNumber;
   final String? docUrl;
   final String? notes;
+  final bool isActive;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -27,6 +28,7 @@ class Vaccine {
     this.batchNumber,
     this.docUrl,
     this.notes,
+    this.isActive = true,
     required this.createdAt,
     this.updatedAt,
   });
@@ -44,6 +46,7 @@ class Vaccine {
       batchNumber: json['batch_number'] as String?,
       docUrl: json['doc_url'] as String?,
       notes: json['notes'] as String?,
+      isActive: json['is_active'] as bool? ?? true,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
     );
@@ -61,6 +64,7 @@ class Vaccine {
       if (batchNumber != null) 'batch_number': batchNumber,
       if (docUrl != null) 'doc_url': docUrl,
       if (notes != null) 'notes': notes,
+      'is_active': isActive,
     };
   }
 
