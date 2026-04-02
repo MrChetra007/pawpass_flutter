@@ -50,10 +50,14 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
             floating: false,
             pinned: true,
             backgroundColor: theme.scaffoldBackgroundColor,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+              onPressed: () => Navigator.pop(context),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(48, 16, 20, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -590,36 +594,103 @@ class _BillingScreenState extends ConsumerState<BillingScreen> with SingleTicker
             ),
             const SizedBox(height: 20),
             Text(
-              'Upgrade to ${plan == "pro" ? "Paw Plan" : "Family Plan"}',
+              'Switch to ${plan == "pro" ? "Paw Plan" : "Family Plan"}',
               style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
-              'This feature requires a subscription. In-app purchase will be available in a future update.',
+              'For testing purposes, you can switch plans directly. In production, this would go through in-app purchase.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.textTheme.labelLarge?.color,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text('Cancel'),
                   ),
                 ),
-                child: const Text('Got it'),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _switchPlan(plan),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text('Switch Plan'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _switchPlan(String plan) async {
+    final theme = Theme.of(context);
+    
+    Navigator.pop(context);
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      
+      if (user != null) {
+        await supabase
+            .from('users')
+            .update({'plan': plan})
+            .eq('id', user.id);
+        
+        ref.invalidate(userProvider);
+        
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Successfully switched to ${plan == "pro" ? "Paw Plan" : "Family Plan"}!'),
+              backgroundColor: PawThemeData.successGreen,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error switching plan: $e'),
+            backgroundColor: theme.colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _restorePurchases() async {
