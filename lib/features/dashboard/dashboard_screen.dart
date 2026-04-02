@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/date_utils.dart';
 import '../../shared/providers/user_provider.dart';
+import '../../features/vaccines/vaccines_list_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -58,7 +59,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 12),
               _buildAppointmentsSection(context),
               const SizedBox(height: 24),
-              _buildSectionHeader(context, 'Vaccine Status'),
+              _buildSectionHeader(
+                context,
+                'Vaccine Status',
+                onViewAll: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const VaccinesListScreen()),
+                ),
+              ),
               const SizedBox(height: 12),
               _buildVaccineSummary(context),
               const SizedBox(height: 24),
@@ -77,10 +85,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.headlineMedium,
+  Widget _buildSectionHeader(BuildContext context, String title, {VoidCallback? onViewAll}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
+        if (onViewAll != null)
+          TextButton(
+            onPressed: onViewAll,
+            child: const Text('View All'),
+          ),
+      ],
     );
   }
 
