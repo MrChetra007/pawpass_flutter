@@ -343,9 +343,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
         children: [
           _buildSettingsTile(context, icon: Icons.help_outline, title: 'Help & FAQ', onTap: () => context.push('/profile/help-faq')),
           _buildDivider(),
-          _buildSettingsTile(context, icon: Icons.privacy_tip_outlined, title: 'Privacy Policy', onTap: () {}),
+          _buildSettingsTile(context, icon: Icons.privacy_tip_outlined, title: 'Privacy Policy', onTap: () => context.push('/profile/privacy-policy')),
           _buildDivider(),
-          _buildSettingsTile(context, icon: Icons.description_outlined, title: 'Terms of Service', onTap: () {}),
+          _buildSettingsTile(context, icon: Icons.description_outlined, title: 'Terms of Service', onTap: () => context.push('/profile/terms-of-service')),
           _buildDivider(),
           _buildSettingsTile(context, icon: Icons.star_outline, title: 'Rate PawPass', onTap: () {}),
         ],

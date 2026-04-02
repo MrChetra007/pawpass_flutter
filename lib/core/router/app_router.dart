@@ -23,6 +23,8 @@ import '../../features/profile/profile_screen.dart';
 import '../../features/profile/theme_picker_screen.dart';
 import '../../features/profile/test_notifications_screen.dart';
 import '../../features/profile/help_faq_screen.dart';
+import '../../features/profile/privacy_policy_screen.dart';
+import '../../features/profile/terms_of_service_screen.dart';
 import '../../features/billing/billing_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -114,6 +116,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile/help-faq',
             builder: (context, state) => const HelpFaqScreen(),
+          ),
+          GoRoute(
+            path: '/profile/privacy-policy',
+            builder: (context, state) => const PrivacyPolicyScreen(),
+          ),
+          GoRoute(
+            path: '/profile/terms-of-service',
+            builder: (context, state) => const TermsOfServiceScreen(),
           ),
           GoRoute(
             path: '/billing',
