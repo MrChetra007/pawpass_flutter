@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/router/app_router.dart';
+import 'core/services/notification_service.dart';
 import 'core/theme/app_theme_builder.dart';
 import 'core/theme/app_theme_data.dart';
 import 'shared/providers/theme_provider.dart';
@@ -41,6 +41,9 @@ Future<void> main() async {
     anonKey: supabaseAnonKey,
   );
 
+  await NotificationService().initialize();
+  _requestNotificationPermission();
+
   final prefs = await SharedPreferences.getInstance();
 
   runApp(
@@ -51,6 +54,16 @@ Future<void> main() async {
       child: const PawPassApp(),
     ),
   );
+}
+
+Future<void> _requestNotificationPermission() async {
+  final notificationService = NotificationService();
+  final shouldRequest = await notificationService.shouldRequestPermission();
+  
+  if (shouldRequest) {
+    await notificationService.requestPermission();
+    await notificationService.markPermissionRequested();
+  }
 }
 
 class PawPassApp extends ConsumerWidget {

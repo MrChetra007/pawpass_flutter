@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/services/notification_service.dart';
 import '../../data/models/vaccine_model.dart';
 import '../../data/repositories/vaccine_repository.dart';
+import 'pet_provider.dart';
 
 final vaccineRepositoryProvider = Provider<VaccineRepository>((ref) {
   return VaccineRepository(Supabase.instance.client);
@@ -59,6 +61,8 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
       final currentVaccines = state.value ?? [];
       state = AsyncValue.data([vaccine, ...currentVaccines]);
 
+      _scheduleNotification(vaccine);
+
       return vaccine;
     } catch (e) {
       rethrow;
@@ -81,6 +85,8 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
 
   Future<void> deleteVaccine(String id) async {
     try {
+      NotificationService().cancelVaccineReminder(id);
+      
       final repository = ref.read(vaccineRepositoryProvider);
       await repository.deleteVaccine(id);
 
@@ -95,6 +101,10 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
 
   Future<void> toggleActive(String id, bool isActive) async {
     try {
+      if (!isActive) {
+        NotificationService().cancelVaccineReminder(id);
+      }
+      
       final repository = ref.read(vaccineRepositoryProvider);
       final updatedVaccine = await repository.toggleActive(id, isActive);
 
@@ -114,5 +124,24 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
       'dueSoon': vaccines.where((v) => v.status == VaccineStatus.dueSoon).length,
       'overdue': vaccines.where((v) => v.status == VaccineStatus.overdue).length,
     };
+  }
+
+  void _scheduleNotification(Vaccine vaccine) async {
+    if (vaccine.nextDueDate == null) return;
+    
+    final petsAsync = ref.read(petNotifierProvider);
+    String petName = 'Your pet';
+    
+    petsAsync.whenData((pets) {
+      final pet = pets.where((p) => p.id == vaccine.petId).firstOrNull;
+      if (pet != null) petName = pet.name;
+    });
+
+    await NotificationService().scheduleVaccineReminder(
+      vaccineId: vaccine.id,
+      petName: petName,
+      vaccineName: vaccine.name,
+      dueDate: vaccine.nextDueDate!,
+    );
   }
 }

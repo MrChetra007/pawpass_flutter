@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/services/notification_service.dart';
 import '../../data/models/appointment_model.dart';
 import '../../data/repositories/appointment_repository.dart';
+import 'pet_provider.dart';
 
 final appointmentRepositoryProvider = Provider<AppointmentRepository>((ref) {
   return AppointmentRepository(Supabase.instance.client);
@@ -66,6 +68,8 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
       final currentAppointments = state.value ?? [];
       state = AsyncValue.data([...currentAppointments, appointment]);
 
+      _scheduleNotification(appointment);
+
       return appointment;
     } catch (e) {
       rethrow;
@@ -88,6 +92,8 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
 
   Future<void> deleteAppointment(String id) async {
     try {
+      NotificationService().cancelAppointmentReminder(id);
+      
       final repository = ref.read(appointmentRepositoryProvider);
       await repository.deleteAppointment(id);
 
@@ -102,6 +108,8 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
 
   Future<void> markAsCompleted(String id) async {
     try {
+      NotificationService().cancelAppointmentReminder(id);
+      
       final repository = ref.read(appointmentRepositoryProvider);
       await repository.markAsCompleted(id);
 
@@ -137,6 +145,8 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
 
   Future<void> cancelAppointment(String id) async {
     try {
+      NotificationService().cancelAppointmentReminder(id);
+      
       final repository = ref.read(appointmentRepositoryProvider);
       await repository.cancelAppointment(id);
 
@@ -168,5 +178,22 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
     } catch (e) {
       rethrow;
     }
+  }
+
+  void _scheduleNotification(Appointment appointment) async {
+    final petsAsync = ref.read(petNotifierProvider);
+    String petName = 'Your pet';
+    
+    petsAsync.whenData((pets) {
+      final pet = pets.where((p) => p.id == appointment.petId).firstOrNull;
+      if (pet != null) petName = pet.name;
+    });
+
+    await NotificationService().scheduleAppointmentReminder(
+      appointmentId: appointment.id,
+      petName: petName,
+      title: appointment.title,
+      appointmentDate: appointment.datetime,
+    );
   }
 }
