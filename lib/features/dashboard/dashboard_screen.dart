@@ -106,10 +106,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 12),
               _buildMedicationsSection(context),
               const SizedBox(height: 24),
-              _buildSectionHeader(context, 'Quick Actions'),
-              const SizedBox(height: 12),
-              _buildQuickActions(context),
-              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -833,75 +829,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActions(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildQuickAction(
-            context,
-            'Add Record',
-            Icons.description,
-            () {},
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildQuickAction(
-            context,
-            'Log Weight',
-            Icons.monitor_weight,
-            () {},
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildQuickAction(
-            context,
-            'Appointment',
-            Icons.calendar_month,
-            () {},
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickAction(
-    BuildContext context,
-    String label,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: theme.colorScheme.secondary.withValues(alpha: 0.3),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
