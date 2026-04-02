@@ -6,7 +6,6 @@ import '../../data/models/medication_model.dart';
 import '../../shared/providers/medication_provider.dart';
 import '../../shared/providers/pet_provider.dart';
 import '../../shared/widgets/empty_state.dart';
-import '../../shared/widgets/paw_card.dart';
 import '../../shared/widgets/skeleton_loader.dart';
 import '../../shared/widgets/upgrade_modal.dart';
 import 'add_edit_medication_screen.dart';
@@ -20,83 +19,136 @@ class MedicationsListScreen extends ConsumerStatefulWidget {
   ConsumerState<MedicationsListScreen> createState() => _MedicationsListScreenState();
 }
 
-class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen> {
+class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
+    with TickerProviderStateMixin {
+  late AnimationController _listAnimationController;
+  late Animation<double> _fadeAnimation;
   String? _selectedPetId;
 
   @override
   void initState() {
     super.initState();
     _selectedPetId = widget.initialPetId;
+    _listAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _listAnimationController, curve: Curves.easeOut),
+    );
     Future.microtask(() {
       ref.read(medicationNotifierProvider.notifier).loadMedications();
     });
   }
 
   @override
+  void dispose() {
+    _listAnimationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final petsAsync = ref.watch(petNotifierProvider);
     final medicationsAsync = ref.watch(medicationNotifierProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Medications'),
-      ),
-      body: Column(
-        children: [
-          _buildPetFilter(petsAsync),
-          Expanded(
-            child: medicationsAsync.when(
-              loading: () => _buildLoadingState(),
-              error: (e, _) => _buildErrorState(e.toString()),
-              data: (medications) {
-                var filteredMeds = medications;
-                if (_selectedPetId != null) {
-                  filteredMeds = filteredMeds.where((m) => m.petId == _selectedPetId).toList();
-                }
-
-                if (filteredMeds.isEmpty) {
-                  return EmptyState(
-                    icon: Icons.medication,
-                    title: 'No medications',
-                    subtitle: 'Track your pet\'s medications and dosages',
-                    actionLabel: 'Add Medication',
-                    onAction: () => _showAddMedication(petsAsync),
-                  );
-                }
-
-                final activeMeds = filteredMeds.where((m) => m.isActive).toList();
-                final inactiveMeds = filteredMeds.where((m) => !m.isActive).toList();
-
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    if (activeMeds.isNotEmpty) ...[
-                      _buildSectionHeader(context, 'Active', activeMeds.length),
-                      const SizedBox(height: 12),
-                      ...activeMeds.map((med) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _buildMedicationCard(med, petsAsync, true),
-                          )),
-                      const SizedBox(height: 24),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverAppBar(
+            expandedHeight: 100,
+            floating: true,
+            pinned: true,
+            backgroundColor: theme.scaffoldBackgroundColor,
+            flexibleSpace: FlexibleSpaceBar(
+              background: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Medications', style: theme.textTheme.headlineMedium),
+                      const SizedBox(height: 4),
+                      Text('Track your pet\'s medications', style: theme.textTheme.labelLarge),
                     ],
-                    if (inactiveMeds.isNotEmpty) ...[
-                      _buildSectionHeader(context, 'Inactive', inactiveMeds.length),
-                      const SizedBox(height: 12),
-                      ...inactiveMeds.map((med) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _buildMedicationCard(med, petsAsync, false),
-                          )),
-                    ],
-                  ],
-                );
-              },
+                  ),
+                ),
+              ),
             ),
           ),
         ],
+        body: Column(
+          children: [
+            _buildPetFilter(petsAsync),
+            Expanded(
+              child: medicationsAsync.when(
+                loading: () => _buildLoadingState(),
+                error: (e, _) => _buildErrorState(e.toString()),
+                data: (medications) {
+                  var filteredMeds = medications;
+                  if (_selectedPetId != null) {
+                    filteredMeds = filteredMeds.where((m) => m.petId == _selectedPetId).toList();
+                  }
+
+                  if (filteredMeds.isEmpty) {
+                    return EmptyState(
+                      icon: Icons.medication,
+                      title: 'No medications',
+                      subtitle: 'Track your pet\'s medications and dosages',
+                      actionLabel: 'Add Medication',
+                      onAction: () => _showAddMedication(petsAsync),
+                    );
+                  }
+
+                  _listAnimationController.forward();
+
+                  final activeMeds = filteredMeds.where((m) => m.isActive).toList();
+                  final inactiveMeds = filteredMeds.where((m) => !m.isActive).toList();
+
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      if (activeMeds.isNotEmpty) ...[
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: _buildSectionHeader(context, 'Active', activeMeds.length),
+                        ),
+                        const SizedBox(height: 12),
+                        ...activeMeds.map((med) => FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _buildMedicationCard(med, petsAsync, true),
+                              ),
+                            )),
+                        const SizedBox(height: 24),
+                      ],
+                      if (inactiveMeds.isNotEmpty) ...[
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: _buildSectionHeader(context, 'Inactive', inactiveMeds.length),
+                        ),
+                        const SizedBox(height: 12),
+                        ...inactiveMeds.map((med) => FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _buildMedicationCard(med, petsAsync, false),
+                              ),
+                            )),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: _AnimatedFab(
         onPressed: () => _showAddMedication(petsAsync),
-        child: const Icon(Icons.add),
+        theme: theme,
       ),
     );
   }
@@ -105,9 +157,19 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen> {
     final theme = Theme.of(context);
     return Row(
       children: [
-        Text(
-          title,
-          style: theme.textTheme.titleLarge,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
         const SizedBox(width: 8),
         Container(
@@ -126,6 +188,7 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen> {
   }
 
   Widget _buildPetFilter(AsyncValue<List> petsAsync) {
+    final theme = Theme.of(context);
     return petsAsync.when(
       data: (pets) {
         if (pets.isEmpty) return const SizedBox();
@@ -140,6 +203,7 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen> {
                 child: ChoiceChip(
                   label: const Text('All Pets'),
                   selected: _selectedPetId == null,
+                  selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
                   onSelected: (_) => setState(() => _selectedPetId = null),
                 ),
               ),
@@ -148,6 +212,7 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen> {
                     child: ChoiceChip(
                       label: Text(pet.name),
                       selected: _selectedPetId == pet.id,
+                      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
                       onSelected: (_) => setState(() => _selectedPetId = pet.id),
                     ),
                   )),
@@ -176,7 +241,7 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
           const SizedBox(height: 16),
           Text('Error: $error'),
           const SizedBox(height: 16),
@@ -199,96 +264,101 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen> {
       if (pet != null) petName = pet.name;
     });
 
-    return PawCard(
+    return GestureDetector(
       onTap: () => _showEditMedication(medication),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(
-              Icons.medication,
-              color: color,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                Icons.medication,
+                color: color,
+                size: 24,
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  medication.name,
-                  style: theme.textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  petName,
-                  style: theme.textTheme.labelMedium,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    if (medication.dosage != null) ...[
-                      Icon(Icons.science, size: 14, color: theme.textTheme.labelMedium?.color),
-                      const SizedBox(width: 4),
-                      Text(
-                        medication.dosage!,
-                        style: theme.textTheme.labelMedium,
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    if (medication.frequency != null) ...[
-                      Icon(Icons.schedule, size: 14, color: theme.textTheme.labelMedium?.color),
-                      const SizedBox(width: 4),
-                      Text(
-                        medication.frequencyLabel,
-                        style: theme.textTheme.labelMedium,
-                      ),
-                    ],
-                  ],
-                ),
-                if (medication.endDate != null) ...[
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    medication.name,
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.event, size: 14, color: theme.textTheme.labelMedium?.color),
+                      Icon(Icons.pets, size: 14, color: theme.colorScheme.primary),
                       const SizedBox(width: 4),
                       Text(
-                        'Until ${DateFormat('MMM d').format(medication.endDate!)}',
-                        style: theme.textTheme.labelMedium,
+                        petName,
+                        style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.primary),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (medication.dosage != null) ...[
+                        Icon(Icons.science, size: 14, color: theme.textTheme.labelMedium?.color),
+                        const SizedBox(width: 4),
+                        Text(
+                          medication.dosage!,
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      if (medication.frequency != null) ...[
+                        Icon(Icons.schedule, size: 14, color: theme.textTheme.labelMedium?.color),
+                        const SizedBox(width: 4),
+                        Text(
+                          medication.frequencyLabel,
+                          style: theme.textTheme.labelMedium,
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (medication.endDate != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.event, size: 14, color: theme.textTheme.labelMedium?.color),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Until ${DateFormat('MMM d').format(medication.endDate!)}',
+                          style: theme.textTheme.labelMedium,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          if (isActive)
-            PopupMenuButton(
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'toggle',
-                  child: Text('Mark as Inactive'),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Delete', style: TextStyle(color: Colors.red)),
-                ),
-              ],
-              onSelected: (value) {
-                if (value == 'toggle') {
-                  ref
-                      .read(medicationNotifierProvider.notifier)
-                      .toggleActive(medication.id, false);
-                } else if (value == 'delete') {
-                  _showDeleteConfirmation(medication);
-                }
-              },
-            ),
-        ],
+            if (isActive)
+              Icon(
+                Icons.circle,
+                color: color,
+                size: 10,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -339,22 +409,27 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen> {
   }
 
   void _showPetPicker(List pets) {
+    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Text(
                 'Select Pet',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: theme.textTheme.titleLarge,
               ),
             ),
             ...pets.map((pet) => ListTile(
               leading: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                 child: Text(pet.speciesEmoji),
               ),
               title: Text(pet.name),
@@ -383,6 +458,57 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen> {
           petId: medication.petId,
           medication: medication,
         ),
+      ),
+    );
+  }
+}
+
+class _AnimatedFab extends StatefulWidget {
+  final VoidCallback onPressed;
+  final ThemeData theme;
+
+  const _AnimatedFab({required this.onPressed, required this.theme});
+
+  @override
+  State<_AnimatedFab> createState() => _AnimatedFabState();
+}
+
+class _AnimatedFabState extends State<_AnimatedFab> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: FloatingActionButton(
+        onPressed: () {
+          _controller.forward().then((_) {
+            _controller.reverse();
+            widget.onPressed();
+          });
+        },
+        backgroundColor: widget.theme.colorScheme.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: const Icon(Icons.add, size: 28),
       ),
     );
   }

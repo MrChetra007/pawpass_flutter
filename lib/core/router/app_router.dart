@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/providers/auth_provider.dart';
+import '../../shared/providers/theme_provider.dart';
 import '../../features/auth/login_screen.dart';
+import '../../core/theme/app_theme_data.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
@@ -20,6 +22,7 @@ import '../../features/weight/weight_history_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/theme_picker_screen.dart';
 import '../../features/profile/test_notifications_screen.dart';
+import '../../features/billing/billing_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -107,53 +110,46 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/profile/test-notifications',
             builder: (context, state) => const TestNotificationsScreen(),
           ),
+          GoRoute(
+            path: '/billing',
+            builder: (context, state) => const BillingScreen(),
+          ),
         ],
       ),
     ],
   );
 });
 
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerStatefulWidget {
   final Widget child;
 
   const MainShell({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _calculateSelectedIndex(context),
-        onTap: (index) => _onItemTapped(index, context),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.pets_outlined),
-            activeIcon: Icon(Icons.pets),
-            label: 'Pets',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.description_outlined),
-            activeIcon: Icon(Icons.description),
-            label: 'Records',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Appointments',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
     );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   int _calculateSelectedIndex(BuildContext context) {
@@ -167,6 +163,10 @@ class MainShell extends StatelessWidget {
   }
 
   void _onItemTapped(int index, BuildContext context) {
+    if (index != _currentIndex) {
+      _controller.forward().then((_) => _controller.reverse());
+      setState(() => _currentIndex = index);
+    }
     switch (index) {
       case 0:
         context.go('/');
@@ -184,5 +184,181 @@ class MainShell extends StatelessWidget {
         context.go('/profile');
         break;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedIndex = _calculateSelectedIndex(context);
+    _currentIndex = selectedIndex;
+    final theme = Theme.of(context);
+
+    final navItems = [
+      _NavItemData(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
+      _NavItemData(icon: Icons.pets_outlined, activeIcon: Icons.pets, label: 'Pets'),
+      _NavItemData(icon: Icons.description_outlined, activeIcon: Icons.description, label: 'Records'),
+      _NavItemData(icon: Icons.calendar_today_outlined, activeIcon: Icons.calendar_today, label: 'Appts'),
+      _NavItemData(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
+    ];
+
+    return Scaffold(
+      body: widget.child,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(navItems.length, (index) {
+                final isSelected = index == selectedIndex;
+                return _DuolingoNavItem(
+                  icon: navItems[index].icon,
+                  activeIcon: navItems[index].activeIcon,
+                  label: navItems[index].label,
+                  isSelected: isSelected,
+                  theme: theme,
+                  onTap: () => _onItemTapped(index, context),
+                );
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItemData {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+
+  _NavItemData({required this.icon, required this.activeIcon, required this.label});
+}
+
+class _DuolingoNavItem extends StatefulWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isSelected;
+  final ThemeData theme;
+  final VoidCallback onTap;
+
+  const _DuolingoNavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isSelected,
+    required this.theme,
+    required this.onTap,
+  });
+
+  @override
+  State<_DuolingoNavItem> createState() => _DuolingoNavItemState();
+}
+
+class _DuolingoNavItemState extends State<_DuolingoNavItem> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _bounceAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
+    _bounceAnimation = Tween<double>(begin: 0.0, end: -4.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    if (widget.isSelected) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_DuolingoNavItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected != oldWidget.isSelected) {
+      if (widget.isSelected) {
+        _controller.forward(from: 0);
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return SizedBox(
+            width: 64,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Transform.translate(
+                  offset: Offset(0, _bounceAnimation.value),
+                  child: Transform.scale(
+                    scale: _scaleAnimation.value,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: widget.isSelected
+                            ? widget.theme.colorScheme.primary.withValues(alpha: 0.15)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        widget.isSelected ? widget.activeIcon : widget.icon,
+                        color: widget.isSelected
+                            ? widget.theme.colorScheme.primary
+                            : widget.theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        size: 26,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: TextStyle(
+                    fontSize: widget.isSelected ? 12 : 11,
+                    fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: widget.isSelected
+                        ? widget.theme.colorScheme.primary
+                        : widget.theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                  child: Text(widget.label),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 }

@@ -16,11 +16,52 @@ class DashboardScreen extends ConsumerStatefulWidget {
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen>
+    with TickerProviderStateMixin {
+  late List<AnimationController> _controllers;
+  late List<Animation<double>> _fadeAnimations;
+
   @override
   void initState() {
     super.initState();
     _loadData();
+    _initAnimations();
+  }
+
+  void _initAnimations() {
+    _controllers = List.generate(
+      4,
+      (index) => AnimationController(
+        duration: const Duration(milliseconds: 600),
+        vsync: this,
+      ),
+    );
+    _fadeAnimations = _controllers
+        .map(
+          (controller) => Tween<double>(
+            begin: 0.0,
+            end: 1.0,
+          ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut)),
+        )
+        .toList();
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        for (var i = 0; i < _controllers.length; i++) {
+          Future.delayed(Duration(milliseconds: i * 100), () {
+            if (mounted) _controllers[i].forward();
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   void _loadData() {
@@ -37,27 +78,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Welcome back,',
-              style: theme.textTheme.labelMedium,
-            ),
-            Text(
-              'Pet Lover',
-              style: theme.textTheme.titleLarge,
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-        ],
-      ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(petNotifierProvider);
@@ -65,66 +85,151 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ref.invalidate(appointmentNotifierProvider);
           ref.invalidate(medicationNotifierProvider);
         },
-        child: SingleChildScrollView(
+        child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildActivePetCard(context),
-              const SizedBox(height: 24),
-              _buildSectionHeader(
-                context,
-                'Upcoming Appointments',
-                onViewAll: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const VaccinesListScreen()),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: false,
+              pinned: true,
+              backgroundColor: theme.scaffoldBackgroundColor,
+              flexibleSpace: FlexibleSpaceBar(
+                background: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Welcome back,',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Pet Lover',
+                                  style: theme.textTheme.headlineMedium,
+                                ),
+                              ],
+                            ),
+                            _AnimatedIconButton(
+                              icon: Icons.notifications_outlined,
+                              onTap: () {},
+                              theme: theme,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-              _buildAppointmentsSection(context),
-              const SizedBox(height: 24),
-              _buildSectionHeader(
-                context,
-                'Vaccine Status',
-                onViewAll: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const VaccinesListScreen()),
-                ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(20),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _AnimatedSection(
+                    animation: _fadeAnimations[0],
+                    child: _buildActivePetCard(context),
+                  ),
+                  const SizedBox(height: 24),
+                  _AnimatedSection(
+                    animation: _fadeAnimations[1],
+                    child: Column(
+                      children: [
+                        _buildSectionHeader(
+                          context,
+                          'Upcoming',
+                          onViewAll: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const VaccinesListScreen(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildAppointmentsSection(context),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _AnimatedSection(
+                    animation: _fadeAnimations[2],
+                    child: Column(
+                      children: [
+                        _buildSectionHeader(
+                          context,
+                          'Vaccine Status',
+                          onViewAll: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const VaccinesListScreen(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildVaccineSummary(context),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _AnimatedSection(
+                    animation: _fadeAnimations[3],
+                    child: Column(
+                      children: [
+                        _buildSectionHeader(
+                          context,
+                          'Active Medications',
+                          onViewAll: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const MedicationsListScreen(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildMedicationsSection(context),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 100),
+                ]),
               ),
-              const SizedBox(height: 12),
-              _buildVaccineSummary(context),
-              const SizedBox(height: 24),
-              _buildSectionHeader(
-                context,
-                'Active Medications',
-                onViewAll: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MedicationsListScreen()),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildMedicationsSection(context),
-              const SizedBox(height: 24),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, {VoidCallback? onViewAll}) {
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title, {
+    VoidCallback? onViewAll,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.headlineMedium,
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         if (onViewAll != null)
-          TextButton(
+          _PulsingTextButton(
             onPressed: onViewAll,
-            child: const Text('View All'),
+            label: 'View All',
+            theme: Theme.of(context),
           ),
       ],
     );
@@ -141,31 +246,96 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         if (pets.isEmpty) {
           return _buildAddPetCard(theme);
         }
-        
+
         final totalPets = pets.length;
-        final males = pets.where((p) => p.gender?.toLowerCase() == 'male').length;
-        final females = pets.where((p) => p.gender?.toLowerCase() == 'female').length;
+        final males = pets
+            .where((p) => p.gender?.toLowerCase() == 'male')
+            .length;
+        final females = pets
+            .where((p) => p.gender?.toLowerCase() == 'female')
+            .length;
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 theme.colorScheme.primary,
-                theme.colorScheme.primary.withValues(alpha: 0.8),
+                theme.colorScheme.primary.withValues(alpha: 0.7),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildPetStat(theme, '🐶🐱', '$totalPets', 'Total'),
-              _buildPetStat(theme, '♂️', '$males', 'Male'),
-              _buildPetStat(theme, '♀️', '$females', 'Female'),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.pets,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Your Pets',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        Text(
+                          '$totalPets registered',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildPetStat(theme, Icons.male, '$males', 'Male'),
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                    _buildPetStat(theme, Icons.female, '$females', 'Female'),
+                  ],
+                ),
+              ),
             ],
           ),
         );
@@ -173,23 +343,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildPetStat(ThemeData theme, String emoji, String count, String label) {
-    return Column(
+  Widget _buildPetStat(
+    ThemeData theme,
+    IconData icon,
+    String count,
+    String label,
+  ) {
+    return Row(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 28)),
-        const SizedBox(height: 8),
-        Text(
-          count,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: Colors.white.withValues(alpha: 0.8),
-          ),
+        Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 20),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              count,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -211,14 +391,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(3, (index) => Container(
-          width: 60,
-          height: 70,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.secondary.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(12),
+        children: List.generate(
+          3,
+          (index) => Container(
+            width: 60,
+            height: 70,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondary.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-        )),
+        ),
       ),
     );
   }
@@ -300,10 +483,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       loading: () => _buildAppointmentsLoading(),
       error: (_, __) => _buildNoAppointments(),
       data: (appointments) {
-        final upcomingAppointments = appointments
-            .where((a) => a.status == 'upcoming' && a.datetime.isAfter(DateTime.now()))
-            .toList()
-          ..sort((a, b) => a.datetime.compareTo(b.datetime));
+        final upcomingAppointments =
+            appointments
+                .where(
+                  (a) =>
+                      a.status == 'upcoming' &&
+                      a.datetime.isAfter(DateTime.now()),
+                )
+                .toList()
+              ..sort((a, b) => a.datetime.compareTo(b.datetime));
 
         if (upcomingAppointments.isEmpty) {
           return _buildNoAppointments();
@@ -329,17 +517,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildAppointmentsLoading() {
     return Column(
-      children: List.generate(2, (index) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Container(
-          width: double.infinity,
-          height: 72,
-          decoration: BoxDecoration(
-            color: Colors.grey.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
+      children: List.generate(
+        2,
+        (index) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Container(
+            width: double.infinity,
+            height: 72,
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
         ),
-      )),
+      ),
     );
   }
 
@@ -379,48 +570,76 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     IconData icon,
     Color color,
   ) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: color, size: 24),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (date != null) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    AppDateUtils.formatShortDate(date),
-                    style: Theme.of(context).textTheme.labelMedium,
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: theme.textTheme.labelMedium?.color,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        AppDateUtils.formatShortDate(date),
+                        style: theme.textTheme.labelMedium,
+                      ),
+                    ],
                   ),
                 ],
               ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Upcoming',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -436,7 +655,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       error: (_, __) => _buildVaccineSummaryEmpty(context),
       data: (vaccines) {
         final activeVaccines = vaccines.where((v) => v.isActive).toList();
-        
+
         int upToDate = 0;
         int dueSoon = 0;
         int overdue = 0;
@@ -542,7 +761,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Theme.of(context).colorScheme.primary,
             ),
           ),
-          Container(width: 1, height: 40, color: Theme.of(context).dividerTheme.color),
+          Container(
+            width: 1,
+            height: 40,
+            color: Theme.of(context).dividerTheme.color,
+          ),
           Expanded(
             child: _buildVaccineChip(
               context,
@@ -552,7 +775,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Colors.orange,
             ),
           ),
-          Container(width: 1, height: 40, color: Theme.of(context).dividerTheme.color),
+          Container(
+            width: 1,
+            height: 40,
+            color: Theme.of(context).dividerTheme.color,
+          ),
           Expanded(
             child: _buildVaccineChip(
               context,
@@ -567,33 +794,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildVaccineSummaryContent(BuildContext context, int upToDate, int dueSoon, int overdue) {
+  Widget _buildVaccineSummaryContent(
+    BuildContext context,
+    int upToDate,
+    int dueSoon,
+    int overdue,
+  ) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
           Expanded(
-            child: _buildVaccineChip(
+            child: _buildVaccineStatItem(
               context,
               'Up to date',
               upToDate.toString(),
               Icons.check_circle,
-              Theme.of(context).colorScheme.primary,
+              theme.colorScheme.primary,
             ),
           ),
-          Container(width: 1, height: 40, color: Theme.of(context).dividerTheme.color),
+          Container(width: 1, height: 50, color: theme.dividerTheme.color),
           Expanded(
-            child: _buildVaccineChip(
+            child: _buildVaccineStatItem(
               context,
               'Due soon',
               dueSoon.toString(),
@@ -601,18 +835,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Colors.orange,
             ),
           ),
-          Container(width: 1, height: 40, color: Theme.of(context).dividerTheme.color),
+          Container(width: 1, height: 50, color: theme.dividerTheme.color),
           Expanded(
-            child: _buildVaccineChip(
+            child: _buildVaccineStatItem(
               context,
               'Overdue',
               overdue.toString(),
               Icons.error,
-              Theme.of(context).colorScheme.error,
+              theme.colorScheme.error,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildVaccineStatItem(
+    BuildContext context,
+    String label,
+    String count,
+    IconData icon,
+    Color color,
+  ) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          count,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(label, style: Theme.of(context).textTheme.labelMedium),
+      ],
     );
   }
 
@@ -641,10 +907,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
+        Text(label, style: Theme.of(context).textTheme.labelMedium),
       ],
     );
   }
@@ -657,7 +920,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       error: (_, __) => _buildMedicationsEmpty(context),
       data: (medications) {
         final activeMedications = medications.where((m) => m.isActive).toList();
-        
+
         if (activeMedications.isEmpty) {
           return _buildMedicationsEmpty(context);
         }
@@ -743,10 +1006,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               color: theme.colorScheme.secondary.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.medication,
-              color: theme.colorScheme.primary,
-            ),
+            child: Icon(Icons.medication, color: theme.colorScheme.primary),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -764,10 +1024,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ],
             ),
           ),
-          Icon(
-            Icons.chevron_right,
-            color: theme.textTheme.labelLarge?.color,
-          ),
+          Icon(Icons.chevron_right, color: theme.textTheme.labelLarge?.color),
         ],
       ),
     );
@@ -778,58 +1035,211 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final displayMeds = medications.take(3).toList();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.secondary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.medication,
+              color: theme.colorScheme.primary,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${medications.length} active medication${medications.length > 1 ? 's' : ''}',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                child: Icon(
-                  Icons.medication,
-                  color: theme.colorScheme.primary,
+                const SizedBox(height: 4),
+                Text(
+                  displayMeds.map((m) => m.name).join(', '),
+                  style: theme.textTheme.labelMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${medications.length} active medication${medications.length > 1 ? 's' : ''}',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    Text(
-                      displayMeds.map((m) => m.name).join(', '),
-                      style: theme.textTheme.labelMedium,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: theme.textTheme.labelLarge?.color,
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.primary,
+              size: 20,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnimatedSection extends StatelessWidget {
+  final Animation<double> animation;
+  final Widget child;
+
+  const _AnimatedSection({required this.animation, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(opacity: animation, child: child);
+  }
+}
+
+class _AnimatedIconButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final ThemeData theme;
+
+  const _AnimatedIconButton({
+    required this.icon,
+    required this.onTap,
+    required this.theme,
+  });
+
+  @override
+  State<_AnimatedIconButton> createState() => _AnimatedIconButtonState();
+}
+
+class _AnimatedIconButtonState extends State<_AnimatedIconButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: widget.theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 10,
               ),
             ],
           ),
-        ],
+          child: Icon(widget.icon, color: widget.theme.colorScheme.onSurface),
+        ),
       ),
+    );
+  }
+}
+
+class _PulsingTextButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final String label;
+  final ThemeData theme;
+
+  const _PulsingTextButton({
+    required this.onPressed,
+    required this.label,
+    required this.theme,
+  });
+
+  @override
+  State<_PulsingTextButton> createState() => _PulsingTextButtonState();
+}
+
+class _PulsingTextButtonState extends State<_PulsingTextButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _pulseAnimation.value,
+          child: TextButton(
+            onPressed: widget.onPressed,
+            style: TextButton.styleFrom(
+              foregroundColor: widget.theme.colorScheme.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            ),
+            child: Text(
+              widget.label,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        );
+      },
     );
   }
 }
