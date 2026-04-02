@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/vet_record_model.dart';
 import '../../data/repositories/record_repository.dart';
 
+export '../../data/repositories/record_repository.dart';
+
 final recordRepositoryProvider = Provider<RecordRepository>((ref) {
   return RecordRepository(Supabase.instance.client);
 });

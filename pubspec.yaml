@@ -32,6 +32,8 @@ dependencies:
   flutter_dotenv: any
   fl_chart: any
   timezone: any
+  pdf: any
+  printing: any
 
 dev_dependencies:
   flutter_test:

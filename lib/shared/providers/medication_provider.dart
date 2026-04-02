@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/medication_model.dart';
 import '../../data/repositories/medication_repository.dart';
 
+export '../../data/repositories/medication_repository.dart';
+
 final medicationRepositoryProvider = Provider<MedicationRepository>((ref) {
   return MedicationRepository(Supabase.instance.client);
 });

@@ -5,6 +5,8 @@ import '../../data/models/vaccine_model.dart';
 import '../../data/repositories/vaccine_repository.dart';
 import 'pet_provider.dart';
 
+export '../../data/repositories/vaccine_repository.dart';
+
 final vaccineRepositoryProvider = Provider<VaccineRepository>((ref) {
   return VaccineRepository(Supabase.instance.client);
 });

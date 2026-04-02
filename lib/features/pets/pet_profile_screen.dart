@@ -3,7 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../data/models/pet_model.dart';
 import '../../shared/providers/pet_provider.dart';
+import '../../shared/providers/vaccine_provider.dart';
+import '../../shared/providers/medication_provider.dart';
+import '../../shared/providers/record_provider.dart';
 import '../../shared/widgets/paw_card.dart';
+import '../../core/utils/feature_gate.dart';
+import '../../core/services/pdf_service.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/medications/medications_list_screen.dart';
 import '../../features/weight/weight_history_screen.dart';
@@ -54,7 +59,7 @@ class PetProfileScreen extends ConsumerWidget {
                         _buildNotesSection(context, pet),
                         const SizedBox(height: 24),
                       ],
-                      _buildHealthSection(context, pet),
+                      _buildHealthSection(context, ref, pet),
                       const SizedBox(height: 24),
                       _buildDangerZone(context, ref, pet),
                       const SizedBox(height: 32),
@@ -246,7 +251,7 @@ class PetProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHealthSection(BuildContext context, Pet pet) {
+  Widget _buildHealthSection(BuildContext context, WidgetRef ref, Pet pet) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -374,8 +379,78 @@ class PetProfileScreen extends ConsumerWidget {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        PawCard(
+          onTap: () => _exportPdf(context, ref, pet),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.picture_as_pdf,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Export Passport', style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Generate PDF with all health records',
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
       ],
     );
+  }
+
+  Future<void> _exportPdf(BuildContext context, WidgetRef ref, Pet pet) async {
+    final hasAccess = await FeatureGate.check(
+      context: context,
+      ref: ref,
+      feature: 'pdf_export',
+    );
+    
+    if (!hasAccess) return;
+
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Generating PDF...')),
+      );
+
+      final vaccines = await ref.read(vaccineRepositoryProvider).getVaccines(petId: pet.id);
+      final medications = await ref.read(medicationRepositoryProvider).getMedications(petId: pet.id);
+      final records = await ref.read(recordRepositoryProvider).getRecords(petId: pet.id);
+
+      final pdf = await PdfService.generatePetPassport(
+        pet: pet,
+        vaccines: vaccines,
+        medications: medications,
+        records: records,
+      );
+
+      if (context.mounted) {
+        await PdfService.printOrSavePdf(context, pdf, '${pet.name}_passport.pdf');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error generating PDF: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildDangerZone(BuildContext context, WidgetRef ref, Pet pet) {
