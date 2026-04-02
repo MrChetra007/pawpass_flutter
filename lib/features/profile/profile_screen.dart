@@ -341,7 +341,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
       ),
       child: Column(
         children: [
-          _buildSettingsTile(context, icon: Icons.help_outline, title: 'Help & FAQ', onTap: () {}),
+          _buildSettingsTile(context, icon: Icons.help_outline, title: 'Help & FAQ', onTap: () => context.push('/profile/help-faq')),
           _buildDivider(),
           _buildSettingsTile(context, icon: Icons.privacy_tip_outlined, title: 'Privacy Policy', onTap: () {}),
           _buildDivider(),

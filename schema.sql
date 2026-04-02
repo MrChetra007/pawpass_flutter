@@ -385,6 +385,16 @@ create policy "Anyone can view avatars"
   on storage.objects for select
   using (bucket_id = 'avatars');
 
+  insert into storage.buckets (id, name, public)
+  values ('avatars', 'avatars', true)
+  on conflict do nothing;
+create policy "Users can upload own avatars"
+  on storage.objects for insert
+  with check (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);
+create policy "Anyone can view avatars"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
 
 -- ============================================================
 -- ✅ DONE! PawPass database is ready.
