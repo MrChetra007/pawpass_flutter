@@ -12,7 +12,9 @@ import '../../shared/widgets/status_badge.dart';
 import 'add_edit_vaccine_screen.dart';
 
 class VaccinesListScreen extends ConsumerStatefulWidget {
-  const VaccinesListScreen({super.key});
+  final String? initialPetId;
+
+  const VaccinesListScreen({super.key, this.initialPetId});
 
   @override
   ConsumerState<VaccinesListScreen> createState() => _VaccinesListScreenState();
@@ -24,6 +26,7 @@ class _VaccinesListScreenState extends ConsumerState<VaccinesListScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedPetId = widget.initialPetId;
     Future.microtask(() {
       ref.read(vaccineNotifierProvider.notifier).loadVaccines();
     });

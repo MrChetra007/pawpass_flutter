@@ -12,7 +12,9 @@ import '../../shared/widgets/upgrade_modal.dart';
 import 'add_edit_medication_screen.dart';
 
 class MedicationsListScreen extends ConsumerStatefulWidget {
-  const MedicationsListScreen({super.key});
+  final String? initialPetId;
+
+  const MedicationsListScreen({super.key, this.initialPetId});
 
   @override
   ConsumerState<MedicationsListScreen> createState() => _MedicationsListScreenState();
@@ -24,6 +26,7 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedPetId = widget.initialPetId;
     Future.microtask(() {
       ref.read(medicationNotifierProvider.notifier).loadMedications();
     });

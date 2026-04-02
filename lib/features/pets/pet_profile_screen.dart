@@ -256,7 +256,9 @@ class PetProfileScreen extends ConsumerWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const VaccinesListScreen()),
+              MaterialPageRoute(
+                builder: (context) => VaccinesListScreen(initialPetId: pet.id),
+              ),
             );
           },
           child: Row(
@@ -294,7 +296,9 @@ class PetProfileScreen extends ConsumerWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const MedicationsListScreen()),
+              MaterialPageRoute(
+                builder: (context) => MedicationsListScreen(initialPetId: pet.id),
+              ),
             );
           },
           child: Row(
