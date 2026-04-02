@@ -9,6 +9,7 @@ import '../../shared/providers/pet_provider.dart';
 import '../../shared/providers/vaccine_provider.dart';
 import '../../shared/providers/appointment_provider.dart';
 import '../../shared/providers/medication_provider.dart';
+import '../../shared/providers/user_provider.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/medications/medications_list_screen.dart';
 import '../../features/appointments/appointments_screen.dart';
@@ -123,9 +124,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                   ),
                                 ),
                                 const SizedBox(height: 2),
-                                Text(
-                                  'Pet Lover',
-                                  style: theme.textTheme.headlineMedium,
+                                ref.watch(userProvider).when(
+                                  data: (user) => Text(
+                                    user?.fullName ?? 'Pet Lover',
+                                    style: theme.textTheme.headlineMedium,
+                                  ),
+                                  loading: () => Text(
+                                    'Loading...',
+                                    style: theme.textTheme.headlineMedium,
+                                  ),
+                                  error: (_, __) => Text(
+                                    'Pet Lover',
+                                    style: theme.textTheme.headlineMedium,
+                                  ),
                                 ),
                               ],
                             ),
