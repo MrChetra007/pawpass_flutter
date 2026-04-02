@@ -6,6 +6,7 @@ import '../../shared/providers/pet_provider.dart';
 import '../../shared/widgets/paw_card.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/medications/medications_list_screen.dart';
+import '../../features/weight/weight_history_screen.dart';
 import 'add_edit_pet_screen.dart';
 
 class PetProfileScreen extends ConsumerWidget {
@@ -328,7 +329,17 @@ class PetProfileScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         PawCard(
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => WeightHistoryScreen(
+                  petId: pet.id,
+                  petName: pet.name,
+                ),
+              ),
+            );
+          },
           child: Row(
             children: [
               Container(
