@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
 import '../../core/constants/supabase_constants.dart';
 import '../../core/utils/validators.dart';
 import '../../data/models/pet_model.dart';
@@ -92,29 +94,60 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
           ? double.tryParse(_weightController.text)
           : null;
 
+      String? uploadedPhotoUrl;
+      
+      if (_photoUrl != null && !_photoUrl!.startsWith('/') && !_photoUrl!.startsWith('http')) {
+        try {
+          final file = File(_photoUrl!);
+          if (await file.exists()) {
+            final supabase = Supabase.instance.client;
+            final user = supabase.auth.currentUser;
+            if (user != null) {
+              final fileName = '${user.id}/pets/${DateTime.now().millisecondsSinceEpoch}';
+              await supabase.storage.from('pet-photos').upload(fileName, file);
+              uploadedPhotoUrl = supabase.storage.from('pet-photos').getPublicUrl(fileName);
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to upload photo: $e')),
+            );
+          }
+        }
+      } else if (_photoUrl != null && _photoUrl!.startsWith('http')) {
+        uploadedPhotoUrl = _photoUrl;
+      }
+
       if (isEditing) {
+        final updateData = {
+          'name': _nameController.text.trim(),
+          'species': _selectedSpecies,
+          'breed': _breedController.text.trim().isNotEmpty
+              ? _breedController.text.trim()
+              : null,
+          'gender': _selectedGender,
+          'dob': _dob?.toIso8601String().split('T').first,
+          'weight_kg': weight,
+          'color': _colorController.text.trim().isNotEmpty
+              ? _colorController.text.trim()
+              : null,
+          'microchip': _microchipController.text.trim().isNotEmpty
+              ? _microchipController.text.trim()
+              : null,
+          'neutered': _neutered,
+          'notes': _notesController.text.trim().isNotEmpty
+              ? _notesController.text.trim()
+              : null,
+        };
+        
+        if (uploadedPhotoUrl != null) {
+          updateData['photo_url'] = uploadedPhotoUrl;
+        }
+        
         await ref.read(petNotifierProvider.notifier).updatePet(
               widget.pet!.id,
-              {
-                'name': _nameController.text.trim(),
-                'species': _selectedSpecies,
-                'breed': _breedController.text.trim().isNotEmpty
-                    ? _breedController.text.trim()
-                    : null,
-                'gender': _selectedGender,
-                'dob': _dob?.toIso8601String().split('T').first,
-                'weight_kg': weight,
-                'color': _colorController.text.trim().isNotEmpty
-                    ? _colorController.text.trim()
-                    : null,
-                'microchip': _microchipController.text.trim().isNotEmpty
-                    ? _microchipController.text.trim()
-                    : null,
-                'neutered': _neutered,
-                'notes': _notesController.text.trim().isNotEmpty
-                    ? _notesController.text.trim()
-                    : null,
-              },
+              updateData,
             );
       } else {
         await ref.read(petNotifierProvider.notifier).createPet(
@@ -136,6 +169,7 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
               notes: _notesController.text.trim().isNotEmpty
                   ? _notesController.text.trim()
                   : null,
+              photoUrl: uploadedPhotoUrl,
             );
       }
 
@@ -185,18 +219,25 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
                   decoration: BoxDecoration(
                     color: theme.colorScheme.secondary.withValues(alpha: 0.3),
                     shape: BoxShape.circle,
-                    image: _photoUrl != null && !_photoUrl!.startsWith('/')
-                        ? DecorationImage(
-                            image: NetworkImage(_photoUrl!),
-                            fit: BoxFit.cover,
-                          )
+                    image: _photoUrl != null
+                        ? _photoUrl!.startsWith('http')
+                            ? DecorationImage(
+                                image: NetworkImage(_photoUrl!),
+                                fit: BoxFit.cover,
+                              )
+                            : DecorationImage(
+                                image: FileImage(File(_photoUrl!)),
+                                fit: BoxFit.cover,
+                              )
                         : null,
                   ),
-                  child: Icon(
-                    Icons.pets,
-                    size: 48,
-                    color: theme.colorScheme.primary,
-                  ),
+                  child: _photoUrl == null
+                      ? Icon(
+                          Icons.pets,
+                          size: 48,
+                          color: theme.colorScheme.primary,
+                        )
+                      : null,
                 ),
               ),
             ),
