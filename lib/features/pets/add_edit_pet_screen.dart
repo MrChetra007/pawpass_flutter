@@ -231,6 +231,21 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
                 );
               }).toList(),
             ),
+            if (_selectedSpecies == 'Other') ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                decoration: const InputDecoration(
+                  labelText: 'Specify Species',
+                  prefixIcon: Icon(Icons.pets),
+                  hintText: 'e.g., Hamster, Guinea Pig, etc.',
+                ),
+                onChanged: (value) {
+                  if (value.isNotEmpty) {
+                    setState(() => _selectedSpecies = value);
+                  }
+                },
+              ),
+            ],
             const SizedBox(height: 24),
             TextFormField(
               controller: _breedController,
@@ -343,6 +358,10 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
         return '🐰';
       case 'bird':
         return '🐦';
+      case 'fish':
+        return '🐟';
+      case 'hamster':
+        return '🐹';
       default:
         return '🐾';
     }

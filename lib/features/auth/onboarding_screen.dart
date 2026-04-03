@@ -395,26 +395,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            'Species',
-            style: theme.textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: _species.map((species) {
-              final isSelected = _selectedSpecies == species;
-              return ChoiceChip(
-                label: Text(species),
-                selected: isSelected,
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() => _selectedSpecies = species);
+            Text(
+              'Species',
+              style: theme.textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: _species.map((species) {
+                final isSelected = _selectedSpecies == species;
+                return ChoiceChip(
+                  label: Text(species),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() => _selectedSpecies = species);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+            if (_selectedSpecies == 'Other') ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                decoration: const InputDecoration(
+                  labelText: 'Specify Species',
+                  prefixIcon: Icon(Icons.pets),
+                  hintText: 'e.g., Hamster, Guinea Pig, etc.',
+                ),
+                onChanged: (value) {
+                  if (value.isNotEmpty) {
+                    setState(() => _selectedSpecies = value);
                   }
                 },
-              );
-            }).toList(),
-          ),
+              ),
+            ],
           const SizedBox(height: 16),
           TextFormField(
             controller: _breedController,
