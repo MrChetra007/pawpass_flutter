@@ -112,41 +112,68 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final userAsync = ref.watch(userProvider);
+                            return Row(
                               children: [
-                                Text(
-                                  'Welcome back,',
-                                  style: theme.textTheme.labelLarge?.copyWith(
-                                    color: theme.colorScheme.primary,
+                                userAsync.when(
+                                  data: (user) => CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                    backgroundImage: user?.avatarUrl != null
+                                        ? NetworkImage(user!.avatarUrl!)
+                                        : null,
+                                    child: user?.avatarUrl == null
+                                        ? Icon(
+                                            Icons.person,
+                                            color: theme.colorScheme.primary,
+                                          )
+                                        : null,
+                                  ),
+                                  loading: () => CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                  ),
+                                  error: (_, __) => CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                                   ),
                                 ),
-                                const SizedBox(height: 2),
-                                ref.watch(userProvider).when(
-                                  data: (user) => Text(
-                                    user?.fullName ?? 'Pet Lover',
-                                    style: theme.textTheme.headlineMedium,
-                                  ),
-                                  loading: () => Text(
-                                    'Loading...',
-                                    style: theme.textTheme.headlineMedium,
-                                  ),
-                                  error: (_, __) => Text(
-                                    'Pet Lover',
-                                    style: theme.textTheme.headlineMedium,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Welcome back,',
+                                        style: theme.textTheme.labelLarge?.copyWith(
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      userAsync.when(
+                                        data: (user) => Text(
+                                          user?.fullName ?? 'Pet Lover',
+                                          style: theme.textTheme.headlineMedium,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        loading: () => Text(
+                                          'Loading...',
+                                          style: theme.textTheme.headlineMedium,
+                                        ),
+                                        error: (_, __) => Text(
+                                          'Pet Lover',
+                                          style: theme.textTheme.headlineMedium,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
-                            ),
-                            _AnimatedIconButton(
-                              icon: Icons.notifications_outlined,
-                              onTap: () => context.push('/profile/test-notifications'),
-                              theme: theme,
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ],
                     ),
