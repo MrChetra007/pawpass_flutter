@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../../core/theme/app_theme_data.dart';
 import '../../shared/providers/auth_notifier.dart';
@@ -19,6 +20,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  bool _notificationsEnabled = true;
 
   @override
   void initState() {
@@ -33,8 +35,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) _animationController.forward();
     });
-    Future.microtask(() {
+    Future.microtask(() async {
       ref.invalidate(up.userProvider);
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+        });
+      }
     });
   }
 
@@ -270,6 +278,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
             context,
             icon: Icons.notifications_outlined,
             title: 'Notifications',
+            subtitle: _notificationsEnabled ? 'Enabled' : 'Disabled',
             onTap: () => context.push('/profile/test-notifications'),
           ),
           _buildDivider(),
