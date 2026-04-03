@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme_data.dart';
 import '../../data/models/vet_record_model.dart';
 import '../../shared/providers/pet_provider.dart';
@@ -346,7 +347,26 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                 ],
               ),
             ),
-            if (record.cost != null)
+            if (record.docUrl != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.attach_file, size: 14, color: theme.colorScheme.primary),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => _viewDocument(record.docUrl!),
+                      child: Text(
+                        'View Document',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
@@ -388,9 +408,20 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
       final year = record.date.year;
       grouped.putIfAbsent(year, () => []).add(record);
     }
-    return Map.fromEntries(
-      grouped.entries.toList()..sort((a, b) => b.key.compareTo(a.key)),
-    );
+    return grouped;
+  }
+
+  Future<void> _viewDocument(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open document')),
+        );
+      }
+    }
   }
 
   void _showAddRecord(AsyncValue<List> petsAsync) {
