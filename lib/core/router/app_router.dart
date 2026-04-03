@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/providers/theme_provider.dart';
+import '../../features/auth/landing_page.dart';
 import '../../features/auth/login_screen.dart';
 import '../../core/theme/app_theme_data.dart';
 import '../../features/auth/register_screen.dart';
@@ -36,17 +37,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = authState.value != null;
       final isAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register' ||
-          state.matchedLocation == '/forgot-password';
+          state.matchedLocation == '/forgot-password' ||
+          state.matchedLocation == '/';
 
+      if (!isLoggedIn && state.matchedLocation == '/home') {
+        return '/';
+      }
       if (!isLoggedIn && !isAuthRoute) {
         return '/login';
       }
       if (isLoggedIn && isAuthRoute) {
-        return '/';
+        return '/home';
       }
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const LandingPage(),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
@@ -63,7 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => MainShell(child: child),
         routes: [
           GoRoute(
-            path: '/',
+            path: '/home',
             builder: (context, state) => const DashboardScreen(),
           ),
           GoRoute(
@@ -169,7 +178,7 @@ class _MainShellState extends ConsumerState<MainShell> with SingleTickerProvider
 
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
-    if (location == '/') return 0;
+    if (location == '/home') return 0;
     if (location.startsWith('/pets')) return 1;
     if (location.startsWith('/records')) return 2;
     if (location.startsWith('/appointments')) return 3;
@@ -177,14 +186,15 @@ class _MainShellState extends ConsumerState<MainShell> with SingleTickerProvider
     return 0;
   }
 
-  void _onItemTapped(int index, BuildContext context) {
+  void _onItemTapped(int index, BuildContext context) async {
     if (index != _currentIndex) {
-      _controller.forward().then((_) => _controller.reverse());
+      await _controller.forward();
+      await _controller.reverse();
       setState(() => _currentIndex = index);
     }
     switch (index) {
       case 0:
-        context.go('/');
+        context.go('/home');
         break;
       case 1:
         context.go('/pets');
