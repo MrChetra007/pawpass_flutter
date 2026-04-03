@@ -66,6 +66,9 @@ create table public.users (
   theme               text not null default 'forest'
                         check (theme in ('forest','ocean','blossom','amber','midnight','lavender')),
 
+  -- Onboarding status
+  is_onboarding       boolean not null default true,
+
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );

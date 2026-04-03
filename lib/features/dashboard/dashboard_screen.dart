@@ -13,6 +13,7 @@ import '../../shared/providers/user_provider.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/medications/medications_list_screen.dart';
 import '../../features/appointments/appointments_screen.dart';
+import '../../features/pets/add_edit_pet_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -478,7 +479,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () {},
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AddEditPetScreen(),
+                ),
+              ),
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: theme.colorScheme.primary,

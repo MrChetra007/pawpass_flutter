@@ -9,6 +9,7 @@ class User {
   final String? avatarUrl;
   final String plan;
   final PawTheme theme;
+  final bool isOnboarding;
 
   User({
     required this.id,
@@ -17,6 +18,7 @@ class User {
     this.avatarUrl,
     this.plan = 'free',
     this.theme = PawTheme.forest,
+    this.isOnboarding = true,
   });
 
   bool get isPro => plan == 'pro' || plan == 'family';
@@ -71,6 +73,7 @@ final userProvider = FutureProvider<User?>((ref) async {
     avatarUrl: response['avatar_url'] as String?,
     plan: response['plan'] as String? ?? 'free',
     theme: theme,
+    isOnboarding: response['is_onboarding'] as bool? ?? true,
   );
 });
 

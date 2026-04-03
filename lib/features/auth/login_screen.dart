@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/validators.dart';
 import '../../shared/providers/auth_notifier.dart';
 import 'register_screen.dart';
@@ -32,7 +33,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _passwordController.text,
           );
       if (success && mounted) {
-        context.go('/');
+        final supabase = Supabase.instance.client;
+        final user = supabase.auth.currentUser;
+        if (user != null) {
+          final userData = await supabase
+              .from('users')
+              .select('is_onboarding')
+              .eq('id', user.id)
+              .maybeSingle();
+          
+          final isOnboarding = userData?['is_onboarding'] as bool? ?? true;
+          if (isOnboarding && mounted) {
+            context.go('/onboarding');
+            return;
+          }
+        }
+        if (mounted) {
+          context.go('/home');
+        }
       }
     }
   }

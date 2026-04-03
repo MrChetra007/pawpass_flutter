@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/providers/theme_provider.dart';
 import '../../features/auth/landing_page.dart';
@@ -8,6 +9,7 @@ import '../../features/auth/login_screen.dart';
 import '../../core/theme/app_theme_data.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/forgot_password_screen.dart';
+import '../../features/auth/onboarding_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/pets/pet_list_screen.dart';
 import '../../features/pets/pet_profile_screen.dart';
@@ -33,20 +35,53 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: '/',
-    redirect: (context, state) {
+    redirect: (context, state) async {
       final isLoggedIn = authState.value != null;
       final isAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register' ||
           state.matchedLocation == '/forgot-password' ||
           state.matchedLocation == '/';
+      final isOnboardingRoute = state.matchedLocation == '/onboarding';
 
       if (!isLoggedIn && state.matchedLocation == '/home') {
         return '/';
       }
-      if (!isLoggedIn && !isAuthRoute) {
+      if (!isLoggedIn && !isAuthRoute && !isOnboardingRoute) {
         return '/login';
       }
-      if (isLoggedIn && isAuthRoute) {
+      
+      if (isLoggedIn && isOnboardingRoute) {
+        final supabase = Supabase.instance.client;
+        final user = supabase.auth.currentUser;
+        if (user != null) {
+          final userData = await supabase
+              .from('users')
+              .select('is_onboarding')
+              .eq('id', user.id)
+              .maybeSingle();
+          
+          final isOnboarding = userData?['is_onboarding'] as bool? ?? true;
+          if (!isOnboarding) {
+            return '/home';
+          }
+        }
+      }
+      
+      if (isLoggedIn && (isAuthRoute || state.matchedLocation == '/')) {
+        final supabase = Supabase.instance.client;
+        final user = supabase.auth.currentUser;
+        if (user != null) {
+          final userData = await supabase
+              .from('users')
+              .select('is_onboarding')
+              .eq('id', user.id)
+              .maybeSingle();
+          
+          final isOnboarding = userData?['is_onboarding'] as bool? ?? true;
+          if (isOnboarding) {
+            return '/onboarding';
+          }
+        }
         return '/home';
       }
       return null;
@@ -67,6 +102,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),

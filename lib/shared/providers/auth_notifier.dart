@@ -10,16 +10,10 @@ class AuthState {
   final bool isLoading;
   final String? error;
 
-  const AuthState({
-    this.isLoading = false,
-    this.error,
-  });
+  const AuthState({this.isLoading = false, this.error});
 
   AuthState copyWith({bool? isLoading, String? error}) {
-    return AuthState(
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-    );
+    return AuthState(isLoading: isLoading ?? this.isLoading, error: error);
   }
 }
 
@@ -32,10 +26,9 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<bool> signIn(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await ref.read(authRepositoryProvider).signIn(
-            email: email,
-            password: password,
-          );
+      await ref
+          .read(authRepositoryProvider)
+          .signIn(email: email, password: password);
       state = state.copyWith(isLoading: false);
       return true;
     } on AuthException catch (e) {
@@ -47,14 +40,12 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  Future<bool> signUp(String email, String password, String fullName) async {
+  Future<bool> signUp(String email, String password, String? fullName) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await ref.read(authRepositoryProvider).signUp(
-            email: email,
-            password: password,
-            fullName: fullName,
-          );
+      await ref
+          .read(authRepositoryProvider)
+          .signUp(email: email, password: password, fullName: fullName ?? '');
       state = state.copyWith(isLoading: false);
       return true;
     } on AuthException catch (e) {

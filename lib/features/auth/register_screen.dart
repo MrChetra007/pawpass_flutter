@@ -13,7 +13,6 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -22,7 +21,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -34,7 +32,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       final success = await ref.read(authNotifierProvider.notifier).signUp(
             _emailController.text.trim(),
             _passwordController.text,
-            _nameController.text.trim(),
+            null,
           );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -43,7 +41,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
-        context.go('/');
+        context.go('/onboarding');
       }
     }
   }
@@ -80,17 +78,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                TextFormField(
-                  controller: _nameController,
-                  textInputAction: TextInputAction.next,
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) => Validators.required(value, fieldName: 'Name'),
-                  decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: Icon(Icons.person_outlined),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
