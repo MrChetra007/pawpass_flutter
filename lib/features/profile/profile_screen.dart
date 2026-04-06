@@ -394,7 +394,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
             title: 'Delete Account',
             iconColor: PawThemeData.alertRed,
             textColor: PawThemeData.alertRed,
-            onTap: () {},
+            onTap: () => _showDeleteAccountDialog(),
           ),
         ],
       ),
@@ -691,6 +691,59 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
         scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('Error updating profile: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteAccount();
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: PawThemeData.alertRed,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    try {
+      await ref.read(authNotifierProvider.notifier).deleteAccount();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account deleted successfully'),
+            backgroundColor: PawThemeData.successGreen,
+          ),
+        );
+        context.go('/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting account: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

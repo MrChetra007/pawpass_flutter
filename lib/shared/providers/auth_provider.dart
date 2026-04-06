@@ -87,4 +87,11 @@ class AuthRepository {
   Future<void> resetPassword(String email) {
     return _supabase.auth.resetPasswordForEmail(email);
   }
+
+  Future<void> deleteAccount() async {
+    final user = _supabase.auth.currentUser;
+    if (user != null) {
+      await _supabase.auth.admin.deleteUser(user.id);
+    }
+  }
 }
