@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -463,34 +464,34 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
   Future<void> _viewDocument(String url) async {
     try {
       final uri = Uri.parse(url);
-      // For Supabase storage URLs, ensure proper encoding
-      final encodedUri = Uri.parse(Uri.encodeComponent(url));
-
-      bool launched = false;
-
-      // Try with encoded URI first
-      if (await canLaunchUrl(encodedUri)) {
-        launched = await launchUrl(
-          encodedUri,
-          mode: LaunchMode.externalApplication,
-        );
+      
+      if (Platform.isAndroid) {
+        final browserUri = Uri.parse('https://google.com/chrome');
+        if (await canLaunchUrl(browserUri) != true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please install a browser to view documents')),
+            );
+          }
+          return;
+        }
       }
 
-      // If that didn't work, try original URL
-      if (!launched && await canLaunchUrl(uri)) {
-        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-
-      if (!launched && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No app found to open this document')),
-        );
+      final canLaunch = await canLaunchUrl(uri);
+      if (canLaunch) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No app found to open this document')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error opening document: $e')),
+        );
       }
     }
   }
