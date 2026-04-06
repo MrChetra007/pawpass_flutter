@@ -36,6 +36,8 @@ dependencies:
   printing: any
   google_sign_in: any
   http: any
+  dio: ^5.9.2
+  open_filex: ^4.7.0
 
 dev_dependencies:
   flutter_test:

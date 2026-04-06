@@ -1,8 +1,10 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_theme_data.dart';
 import '../../data/models/vet_record_model.dart';
 import '../../shared/providers/pet_provider.dart';
@@ -10,6 +12,432 @@ import '../../shared/providers/record_provider.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/skeleton_loader.dart';
 import 'add_edit_record_screen.dart';
+
+// ---------------------------------------------------------------------------
+// Document preview overlay
+// ---------------------------------------------------------------------------
+
+/// Shows a full-screen overlay to preview a document URL.
+/// - Image files  → rendered with Image.network + pinch-to-zoom
+/// - PDF / other  → downloads to temp dir then renders via flutter_pdfview
+///   (see inline comments). Falls back to "open with device app" until the
+///   package is added to pubspec.yaml.
+class _DocumentPreviewOverlay extends StatefulWidget {
+  final String url;
+  final String title;
+
+  const _DocumentPreviewOverlay({required this.url, required this.title});
+
+  @override
+  State<_DocumentPreviewOverlay> createState() =>
+      _DocumentPreviewOverlayState();
+}
+
+class _DocumentPreviewOverlayState extends State<_DocumentPreviewOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animCtrl;
+  late Animation<double> _fadeAnim;
+
+  bool get _isImage {
+    final lower = widget.url.toLowerCase();
+    return lower.contains('.png') ||
+        lower.contains('.jpg') ||
+        lower.contains('.jpeg') ||
+        lower.contains('.gif') ||
+        lower.contains('.webp') ||
+        lower.contains('image') ||
+        lower.contains('photo');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _animCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _dismiss() async {
+    await _animCtrl.reverse();
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          title: Text(
+            widget.title,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: _dismiss,
+          ),
+        ),
+        body: _isImage
+            ? _buildImagePreview()
+            : _PdfPreviewPage(url: widget.url, title: widget.title),
+      ),
+    );
+  }
+
+  Widget _buildImagePreview() {
+    return InteractiveViewer(
+      minScale: 0.5,
+      maxScale: 4.0,
+      child: Center(
+        child: Image.network(
+          widget.url,
+          fit: BoxFit.contain,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            final pct = progress.expectedTotalBytes != null
+                ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                : null;
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(value: pct, color: Colors.white),
+                  const SizedBox(height: 12),
+                  Text(
+                    pct != null
+                        ? '${(pct * 100).toStringAsFixed(0)}%'
+                        : 'Loading…',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            );
+          },
+          errorBuilder: (context, error, _) => const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.broken_image_outlined,
+                  color: Colors.white54,
+                  size: 64,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Could not load preview',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PDF preview page
+// ---------------------------------------------------------------------------
+
+enum _PreviewState { loading, ready, error }
+
+/// Downloads the document to a temp file, then renders it.
+///
+/// To enable native PDF rendering:
+///   1. Add `flutter_pdfview: ^2.x.x` to pubspec.yaml
+///   2. Uncomment the PDFView block in [_PdfPreviewPageState.build]
+///   3. Add `import 'package:flutter_pdfview/flutter_pdfview.dart';` at the top
+///
+/// Until then, the widget shows a "open with device app" fallback.
+class _PdfPreviewPage extends StatefulWidget {
+  final String url;
+  final String title;
+  const _PdfPreviewPage({required this.url, required this.title});
+
+  @override
+  State<_PdfPreviewPage> createState() => _PdfPreviewPageState();
+}
+
+class _PdfPreviewPageState extends State<_PdfPreviewPage> {
+  _PreviewState _state = _PreviewState.loading;
+  String? _localPath;
+  String? _error;
+  double _downloadProgress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFile();
+  }
+
+  Future<void> _fetchFile() async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final fileName = widget.url.split('/').last.split('?').first;
+      final path = '${dir.path}/${fileName.isNotEmpty ? fileName : 'document'}';
+
+      await Dio().download(
+        widget.url,
+        path,
+        onReceiveProgress: (received, total) {
+          if (total > 0 && mounted) {
+            setState(() => _downloadProgress = received / total);
+          }
+        },
+      );
+
+      if (mounted)
+        setState(() {
+          _localPath = path;
+          _state = _PreviewState.ready;
+        });
+    } catch (e) {
+      if (mounted)
+        setState(() {
+          _error = e.toString();
+          _state = _PreviewState.error;
+        });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    switch (_state) {
+      case _PreviewState.loading:
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                value: _downloadProgress > 0 ? _downloadProgress : null,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _downloadProgress > 0
+                    ? '${(_downloadProgress * 100).toStringAsFixed(0)}%'
+                    : 'Loading document…',
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+        );
+
+      case _PreviewState.ready:
+        // ── Uncomment after adding flutter_pdfview to pubspec.yaml ──────
+        // return PDFView(
+        //   filePath: _localPath!,
+        //   enableSwipe: true,
+        //   swipeHorizontal: true,
+        //   autoSpacing: false,
+        //   pageFling: true,
+        // );
+        // ── Fallback ─────────────────────────────────────────────────────
+        return _NoPreviewFallback(localPath: _localPath!);
+
+      case _PreviewState.error:
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.white54,
+                  size: 56,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Failed to load document',
+                  style: TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _error ?? '',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+    }
+  }
+}
+
+class _NoPreviewFallback extends StatelessWidget {
+  final String localPath;
+  const _NoPreviewFallback({required this.localPath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.picture_as_pdf_outlined,
+              color: Colors.white54,
+              size: 72,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'In-app PDF preview not enabled',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Add flutter_pdfview to pubspec.yaml to enable it.\n'
+              'In the meantime you can open the file below.',
+              style: TextStyle(color: Colors.white60, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              onPressed: () => OpenFilex.open(localPath),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Open with device app'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Download helper
+// ---------------------------------------------------------------------------
+
+class _DocumentDownloader {
+  static Future<void> download(
+    BuildContext context,
+    String url,
+    String title,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    String? savePath;
+
+    // Resolve destination directory.
+    try {
+      final Directory dir;
+      if (Platform.isAndroid) {
+        dir = Directory('/storage/emulated/0/Download');
+        if (!dir.existsSync()) dir.createSync(recursive: true);
+      } else {
+        dir = await getApplicationDocumentsDirectory();
+      }
+      final rawName = url.split('/').last.split('?').first;
+      final fileName = rawName.isNotEmpty ? rawName : '${title}_document';
+      savePath = '${dir.path}/$fileName';
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not resolve save path: $e')),
+      );
+      return;
+    }
+
+    // Show progress.
+    final progressNotifier = ValueNotifier<double?>(null);
+    final controller = messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(minutes: 5),
+        content: ValueListenableBuilder<double?>(
+          valueListenable: progressNotifier,
+          builder: (_, pct, __) => Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  value: pct,
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                pct != null
+                    ? 'Downloading… ${(pct * 100).toStringAsFixed(0)}%'
+                    : 'Downloading…',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final finalPath = savePath;
+      await Dio().download(
+        url,
+        finalPath,
+        onReceiveProgress: (received, total) {
+          if (total > 0) progressNotifier.value = received / total;
+        },
+      );
+
+      controller.close();
+      progressNotifier.dispose();
+
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              Platform.isAndroid ? 'Saved to Downloads' : 'Saved to Documents',
+            ),
+            action: SnackBarAction(
+              label: 'Open',
+              onPressed: () => OpenFilex.open(finalPath),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      controller.close();
+      progressNotifier.dispose();
+      if (context.mounted) {
+        messenger.showSnackBar(SnackBar(content: Text('Download failed: $e')));
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main screen
+// ---------------------------------------------------------------------------
 
 class RecordsListScreen extends ConsumerStatefulWidget {
   const RecordsListScreen({super.key});
@@ -35,9 +463,9 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _listAnimationController, curve: Curves.easeOut),
     );
-    Future.microtask(() {
-      ref.read(recordNotifierProvider.notifier).loadRecords();
-    });
+    Future.microtask(
+      () => ref.read(recordNotifierProvider.notifier).loadRecords(),
+    );
   }
 
   @override
@@ -118,6 +546,8 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
     );
   }
 
+  // ── Filters ───────────────────────────────────────────────────────────────
+
   Widget _buildPetFilter(AsyncValue<List> petsAsync) {
     final theme = Theme.of(context);
     return petsAsync.when(
@@ -173,7 +603,6 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
       'dental',
       'other',
     ];
-
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -194,6 +623,8 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
       ),
     );
   }
+
+  // ── States ────────────────────────────────────────────────────────────────
 
   Widget _buildLoadingState() {
     return ListView.builder(
@@ -229,16 +660,16 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
     );
   }
 
+  // ── List ──────────────────────────────────────────────────────────────────
+
   Widget _buildRecordsList(List<VetRecord> records) {
     final groupedRecords = _groupByYear(records);
-
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: groupedRecords.length,
       itemBuilder: (context, index) {
         final year = groupedRecords.keys.elementAt(index);
         final yearRecords = groupedRecords[year]!;
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -277,21 +708,22 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                 ),
               ),
             ),
-            // FIX: removed unused recordIndex from .asMap().entries
-            ...yearRecords.map((record) {
-              return FadeTransition(
+            ...yearRecords.map(
+              (record) => FadeTransition(
                 opacity: _fadeAnimation,
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _buildRecordCard(record),
                 ),
-              );
-            }),
+              ),
+            ),
           ],
         );
       },
     );
   }
+
+  // ── Card ──────────────────────────────────────────────────────────────────
 
   Widget _buildRecordCard(VetRecord record) {
     final theme = Theme.of(context);
@@ -311,11 +743,6 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
             ),
           ],
         ),
-        // FIX: Restructured card layout. The original code placed the docUrl
-        // buttons Row and the cost badge as trailing siblings inside the outer
-        // Row, which is impossible — a Row can only have one trailing widget.
-        // Now the card uses a Column so the info row and the action/cost row
-        // sit in separate vertical layers.
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -405,8 +832,7 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
               ],
             ),
 
-            // Bottom row: document buttons + cost badge
-            // FIX: cost uses null-safe fallback instead of force-unwrap (!)
+            // Bottom row: View / Download + cost badge
             if (record.docUrl != null || record.cost != null) ...[
               const SizedBox(height: 12),
               Row(
@@ -414,8 +840,9 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                   if (record.docUrl != null) ...[
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => _viewDocument(record.docUrl!),
-                        icon: const Icon(Icons.visibility, size: 18),
+                        onPressed: () =>
+                            _showDocumentPreview(record.docUrl!, record.title),
+                        icon: const Icon(Icons.visibility_outlined, size: 18),
                         label: const Text('View'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -427,9 +854,9 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () =>
-                            _shareDocument(record.docUrl!, record.title),
-                        icon: const Icon(Icons.share, size: 18),
-                        label: const Text('Share'),
+                            _downloadDocument(record.docUrl!, record.title),
+                        icon: const Icon(Icons.download_outlined, size: 18),
+                        label: const Text('Download'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           visualDensity: VisualDensity.compact,
@@ -466,67 +893,44 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
     );
   }
 
+  // ── Document actions ──────────────────────────────────────────────────────
+
+  void _showDocumentPreview(String url, String title) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black87,
+        pageBuilder: (_, __, ___) =>
+            _DocumentPreviewOverlay(url: url, title: title),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
+  }
+
+  Future<void> _downloadDocument(String url, String title) async {
+    await _DocumentDownloader.download(context, url, title);
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
   List<VetRecord> _filterRecords(List<VetRecord> records) {
     var filtered = records;
-
     if (_selectedPetId != null) {
       filtered = filtered.where((r) => r.petId == _selectedPetId).toList();
     }
-
     if (_filterType != 'all') {
       filtered = filtered.where((r) => r.type == _filterType).toList();
     }
-
     return filtered;
   }
 
   Map<int, List<VetRecord>> _groupByYear(List<VetRecord> records) {
     final grouped = <int, List<VetRecord>>{};
     for (final record in records) {
-      final year = record.date.year;
-      grouped.putIfAbsent(year, () => []).add(record);
+      grouped.putIfAbsent(record.date.year, () => []).add(record);
     }
     return grouped;
-  }
-
-  Future<void> _viewDocument(String url) async {
-    // FIX: removed the incorrect Android-specific Chrome canLaunchUrl check,
-    // which was testing for a fake Chrome URL instead of the actual document
-    // URL. Just attempt to launch the real URI directly; if no app can handle
-    // it, show a friendly snack-bar.
-    try {
-      final uri = Uri.parse(url);
-      final canLaunch = await canLaunchUrl(uri);
-      if (canLaunch) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No app found to open this document')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error opening document: $e')));
-      }
-    }
-  }
-
-  // FIX: renamed _downloadDocument → _shareDocument to match the button label
-  // and clarify intent (share_plus shares, it doesn't download).
-  Future<void> _shareDocument(String url, String title) async {
-    try {
-      await Share.share(url, subject: title);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error sharing document: $e')));
-      }
-    }
   }
 
   void _showAddRecord(AsyncValue<List> petsAsync) {
@@ -537,7 +941,6 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
         ).showSnackBar(const SnackBar(content: Text('Add a pet first')));
         return;
       }
-
       if (_selectedPetId != null) {
         Navigator.push(
           context,
@@ -623,6 +1026,10 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Animated FAB
+// ---------------------------------------------------------------------------
 
 class _AnimatedFab extends StatefulWidget {
   final VoidCallback onPressed;
