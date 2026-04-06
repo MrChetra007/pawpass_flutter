@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/validators.dart';
 import '../../shared/providers/auth_notifier.dart';
+import '../../shared/providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -42,6 +44,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
         );
         context.go('/onboarding');
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    try {
+      await ref.read(authRepositoryProvider).signInWithGoogle();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in failed: ${e.toString()}')),
+        );
       }
     }
   }
@@ -157,6 +171,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       : const Text('Create Account'),
                 ),
                 const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: theme.dividerTheme.color)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'or',
+                        style: theme.textTheme.labelMedium,
+                      ),
+                    ),
+                    Expanded(child: Divider(color: theme.dividerTheme.color)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton(
+                  onPressed: _signInWithGoogle,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: BorderSide(color: theme.dividerTheme.color ?? Colors.grey),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/icons/google.png',
+                        width: 20,
+                        height: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Continue with Google'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

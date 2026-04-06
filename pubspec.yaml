@@ -34,6 +34,7 @@ dependencies:
   timezone: any
   pdf: any
   printing: any
+  google_sign_in: any
 
 dev_dependencies:
   flutter_test:
