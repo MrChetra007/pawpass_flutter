@@ -31,7 +31,7 @@ Future<void> main() async {
   initGoogleSignIn();
 
   await NotificationService().initialize();
-  _requestNotificationPermission();
+  await _requestNotificationPermission();
 
   final prefs = await SharedPreferences.getInstance();
 

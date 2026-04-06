@@ -1,26 +1,25 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void initGoogleSignIn() {
-  final webClientId = dotenv.env['WEB_CLIENT_ID'];
-  final iosClientId = dotenv.env['IOS_CLIENT_ID'];
-  final androidClientId = dotenv.env['ANDROID_CLIENT_ID'];
+  try {
+    final webClientId = dotenv.env['WEB_CLIENT_ID'];
+    final iosClientId = dotenv.env['IOS_CLIENT_ID'];
+    final androidClientId = dotenv.env['ANDROID_CLIENT_ID'];
 
-  unawaited(
-    GoogleSignIn.instance
-        .initialize(
-          clientId: Platform.isIOS ? iosClientId : androidClientId,
-          serverClientId: webClientId,
-        )
-        .then((_) {
-          GoogleSignIn.instance.attemptLightweightAuthentication();
-        }),
-  );
+    GoogleSignIn.instance.initialize(
+      clientId: Platform.isIOS ? iosClientId : androidClientId,
+      serverClientId: webClientId,
+    );
+  } catch (e) {
+    debugPrint('GoogleSignIn init error: $e');
+  }
 }
 
 final googleSignInProvider = Provider<GoogleSignIn>((ref) {
