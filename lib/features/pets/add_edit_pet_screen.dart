@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:io';
+import 'dart:typed_data';
 import '../../core/constants/supabase_constants.dart';
 import '../../core/utils/validators.dart';
 import '../../data/models/pet_model.dart';
@@ -32,7 +32,15 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
   bool _neutered = false;
   bool _isLoading = false;
   bool _isUploadingPhoto = false;
-  String? _photoUrl;
+
+  /// Public URL of the existing saved photo (loaded from DB when editing)
+  String? _existingPhotoUrl;
+
+  /// Newly picked image bytes — used for instant local preview before upload
+  Uint8List? _pickedImageBytes;
+
+  /// The XFile from image_picker, kept for upload
+  XFile? _pickedImage;
 
   bool get isEditing => widget.pet != null;
 
@@ -50,7 +58,7 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
       _microchipController.text = widget.pet!.microchip ?? '';
       _neutered = widget.pet!.neutered;
       _notesController.text = widget.pet!.notes ?? '';
-      _photoUrl = widget.pet!.photoUrl;
+      _existingPhotoUrl = widget.pet!.photoUrl;
     }
   }
 
@@ -66,17 +74,41 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 80,
-    );
-    if (image != null) {
-      // For Android, the path might be a content:// URI
-      // The File constructor works with both file:// and content:// on modern Flutter
-      setState(() => _photoUrl = image.path);
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+
+      if (image == null) return;
+
+      // readAsBytes() works with content:// URIs on Android,
+      // file:// on iOS, and blobs on web — no File() needed
+      final bytes = await image.readAsBytes();
+
+      if (bytes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not read image. Try another.')),
+          );
+        }
+        return;
+      }
+
+      setState(() {
+        _pickedImage = image;
+        _pickedImageBytes = bytes;
+      });
+    } catch (e) {
+      debugPrint('Image pick error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
+      }
     }
   }
 
@@ -87,14 +119,51 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
-    if (picked != null) {
-      setState(() => _dob = picked);
+    if (picked != null) setState(() => _dob = picked);
+  }
+
+  /// Uploads image bytes to Supabase Storage (public bucket)
+  /// and returns the public URL.
+  Future<String?> _uploadPickedImage() async {
+    if (_pickedImage == null || _pickedImageBytes == null) return null;
+
+    setState(() => _isUploadingPhoto = true);
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user == null) return null;
+
+      final storagePath =
+          '${user.id}/pets/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      await supabase.storage
+          .from('pet-photos')
+          .uploadBinary(
+            storagePath,
+            _pickedImageBytes!,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: true,
+            ),
+          );
+
+      // getPublicUrl works because the bucket is set to public
+      return supabase.storage.from('pet-photos').getPublicUrl(storagePath);
+    } catch (e) {
+      debugPrint('Photo upload error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to upload photo: $e')));
+      }
+      return null;
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
     }
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     try {
@@ -102,50 +171,14 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
           ? double.tryParse(_weightController.text)
           : null;
 
-      String? uploadedPhotoUrl;
-      
-      // Handle both file paths and content URIs
-      if (_photoUrl != null && !_photoUrl!.startsWith('http')) {
-        setState(() => _isUploadingPhoto = true);
-        try {
-          final supabase = Supabase.instance.client;
-          final user = supabase.auth.currentUser;
-          if (user != null) {
-            File file;
-            
-            // Handle content:// URIs from image_picker (Android)
-            if (_photoUrl!.startsWith('content://')) {
-              // Copy the content URI to a temporary file
-              final tempDir = Directory.systemTemp;
-              final tempFile = File('${tempDir.path}/temp_pet_${DateTime.now().millisecondsSinceEpoch}.jpg');
-              await tempFile.writeAsBytes(await File(_photoUrl!).readAsBytes());
-              file = tempFile;
-            } else {
-              file = File(_photoUrl!);
-            }
-            
-            if (await file.exists()) {
-              final fileName = '${user.id}/pets/${DateTime.now().millisecondsSinceEpoch}.jpg';
-              await supabase.storage.from('pet-photos').upload(fileName, file);
-              uploadedPhotoUrl = supabase.storage.from('pet-photos').getPublicUrl(fileName);
-            }
-          }
-        } catch (e) {
-          debugPrint('Photo upload error: $e');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to upload photo: $e')),
-            );
-          }
-        } finally {
-          setState(() => _isUploadingPhoto = false);
-        }
-      } else if (_photoUrl != null && _photoUrl!.startsWith('http')) {
-        uploadedPhotoUrl = _photoUrl;
+      // Upload new image if one was picked, otherwise keep the existing URL
+      String? finalPhotoUrl = _existingPhotoUrl;
+      if (_pickedImage != null) {
+        finalPhotoUrl = await _uploadPickedImage();
       }
 
       if (isEditing) {
-        final updateData = {
+        final updateData = <String, dynamic>{
           'name': _nameController.text.trim(),
           'species': _selectedSpecies,
           'breed': _breedController.text.trim().isNotEmpty
@@ -164,18 +197,16 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
           'notes': _notesController.text.trim().isNotEmpty
               ? _notesController.text.trim()
               : null,
+          if (finalPhotoUrl != null) 'photo_url': finalPhotoUrl,
         };
-        
-        if (uploadedPhotoUrl != null) {
-          updateData['photo_url'] = uploadedPhotoUrl;
-        }
-        
-        await ref.read(petNotifierProvider.notifier).updatePet(
-              widget.pet!.id,
-              updateData,
-            );
+
+        await ref
+            .read(petNotifierProvider.notifier)
+            .updatePet(widget.pet!.id, updateData);
       } else {
-        await ref.read(petNotifierProvider.notifier).createPet(
+        await ref
+            .read(petNotifierProvider.notifier)
+            .createPet(
               name: _nameController.text.trim(),
               species: _selectedSpecies,
               breed: _breedController.text.trim().isNotEmpty
@@ -194,21 +225,70 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
               notes: _notesController.text.trim().isNotEmpty
                   ? _notesController.text.trim()
                   : null,
-              photoUrl: uploadedPhotoUrl,
+              photoUrl: finalPhotoUrl,
             );
       }
 
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  /// Image display priority:
+  /// 1. Freshly picked → Image.memory (bytes, no URI/path issues at all)
+  /// 2. Existing saved → Image.network (public URL from Supabase)
+  /// 3. Nothing → placeholder paw icon
+  Widget _buildAvatarContent(ThemeData theme) {
+    // Newly picked image — show bytes directly, always works
+    if (_pickedImageBytes != null) {
+      return ClipOval(
+        child: Image.memory(
+          _pickedImageBytes!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+          errorBuilder: (_, error, __) {
+            debugPrint('Image.memory error: $error');
+            return _placeholderIcon(theme);
+          },
+        ),
+      );
+    }
+
+    // Existing saved photo — public URL
+    if (_existingPhotoUrl != null && _existingPhotoUrl!.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          _existingPhotoUrl!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+          loadingBuilder: (_, child, progress) {
+            if (progress == null) return child;
+            return const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            );
+          },
+          errorBuilder: (_, error, __) {
+            debugPrint('Image.network error: $error');
+            return _placeholderIcon(theme);
+          },
+        ),
+      );
+    }
+
+    return _placeholderIcon(theme);
+  }
+
+  Widget _placeholderIcon(ThemeData theme) =>
+      Icon(Icons.pets, size: 48, color: theme.colorScheme.primary);
 
   @override
   Widget build(BuildContext context) {
@@ -235,45 +315,43 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // ── Photo picker ──────────────────────────────────────────
             Center(
               child: GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondary.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                    image: _photoUrl != null
-                        ? _photoUrl!.startsWith('http')
-                            ? DecorationImage(
-                                image: NetworkImage(_photoUrl!),
-                                fit: BoxFit.cover,
-                              )
-                            : DecorationImage(
-                                image: FileImage(File(_photoUrl!)),
-                                fit: BoxFit.cover,
-                              )
-                        : null,
-                  ),
-                  child: _photoUrl == null
-                      ? Icon(
-                          Icons.pets,
-                          size: 48,
-                          color: theme.colorScheme.primary,
-                        )
-                      : null,
+                onTap: _isUploadingPhoto ? null : _pickImage,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondary.withValues(
+                          alpha: 0.3,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: _buildAvatarContent(theme),
+                    ),
+                    if (_isUploadingPhoto) const CircularProgressIndicator(),
+                  ],
                 ),
               ),
             ),
             const SizedBox(height: 8),
             Center(
               child: TextButton(
-                onPressed: _pickImage,
-                child: const Text('Add Photo'),
+                onPressed: _isUploadingPhoto ? null : _pickImage,
+                child: Text(
+                  (_pickedImageBytes != null || _existingPhotoUrl != null)
+                      ? 'Change Photo'
+                      : 'Add Photo',
+                ),
               ),
             ),
             const SizedBox(height: 24),
+
+            // ── Name ──────────────────────────────────────────────────
             TextFormField(
               controller: _nameController,
               validator: Validators.petName,
@@ -283,6 +361,8 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
               ),
             ),
             const SizedBox(height: 24),
+
+            // ── Species ───────────────────────────────────────────────
             Text('Species *', style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
             Wrap(
@@ -313,6 +393,8 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
               ),
             ],
             const SizedBox(height: 24),
+
+            // ── Breed ─────────────────────────────────────────────────
             TextFormField(
               controller: _breedController,
               decoration: const InputDecoration(
@@ -321,6 +403,8 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
               ),
             ),
             const SizedBox(height: 16),
+
+            // ── Gender ────────────────────────────────────────────────
             Text('Gender', style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
             Row(
@@ -337,7 +421,8 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
                   child: ChoiceChip(
                     label: const Text('Female'),
                     selected: _selectedGender == 'female',
-                    onSelected: (_) => setState(() => _selectedGender = 'female'),
+                    onSelected: (_) =>
+                        setState(() => _selectedGender = 'female'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -345,12 +430,15 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
                   child: ChoiceChip(
                     label: const Text('Unknown'),
                     selected: _selectedGender == 'unknown',
-                    onSelected: (_) => setState(() => _selectedGender = 'unknown'),
+                    onSelected: (_) =>
+                        setState(() => _selectedGender = 'unknown'),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
+
+            // ── Date of Birth ─────────────────────────────────────────
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.cake),
@@ -365,6 +453,8 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
             ),
             const Divider(),
             const SizedBox(height: 16),
+
+            // ── Weight / Color / Microchip ────────────────────────────
             TextFormField(
               controller: _weightController,
               keyboardType: TextInputType.number,
@@ -391,6 +481,8 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
               ),
             ),
             const SizedBox(height: 24),
+
+            // ── Neutered / Notes ──────────────────────────────────────
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Neutered/Spayed'),

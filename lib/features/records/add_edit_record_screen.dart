@@ -132,9 +132,9 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
         .from('vet-documents')
         .upload(fileName, _selectedFile!);
 
-      final url = supabase.storage
+      final url = await supabase.storage
         .from('vet-documents')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 31536000);
 
       setState(() => _isUploading = false);
       return url;
@@ -387,6 +387,8 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
   Widget _buildDocumentUpload() {
     final theme = Theme.of(context);
 
+    final bool isImage = _docUrl != null && _isImageFile(_docUrl!);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -444,32 +446,82 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
                 ],
               ),
             )
-          else if (_docUrl != null)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.description, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Document attached',
-                      style: theme.textTheme.bodyMedium,
+          else if (_docUrl != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                _docUrl!,
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: theme.colorScheme.error),
-                    onPressed: () => setState(() => _docUrl = null),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  debugPrint('Image load error: $error for URL: $_docUrl');
+                  return Container(
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.description,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Document attached',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            )
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.description,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _docUrl!.split('/').last,
+                    style: theme.textTheme.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, color: theme.colorScheme.error),
+                  onPressed: () => setState(() => _docUrl = null),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ]
           else
             OutlinedButton.icon(
               onPressed: _isUploading ? null : _pickFile,
@@ -487,6 +539,34 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  bool _isImageFile(String url) {
+    final lower = url.toLowerCase();
+    return lower.contains('.png') ||
+        lower.contains('.jpg') ||
+        lower.contains('.jpeg') ||
+        lower.contains('.gif') ||
+        lower.contains('.webp') ||
+        lower.contains('image') ||
+        lower.contains('photo');
+  }
+
+  Widget _buildDocumentPlaceholder(ThemeData theme) {
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.description,
+          size: 40,
+          color: theme.colorScheme.primary,
+        ),
       ),
     );
   }

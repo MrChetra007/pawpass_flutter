@@ -67,9 +67,15 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Health Records', style: theme.textTheme.headlineMedium),
+                      Text(
+                        'Health Records',
+                        style: theme.textTheme.headlineMedium,
+                      ),
                       const SizedBox(height: 4),
-                      Text('Track your pet\'s medical history', style: theme.textTheme.labelLarge),
+                      Text(
+                        'Track your pet\'s medical history',
+                        style: theme.textTheme.labelLarge,
+                      ),
                     ],
                   ),
                 ),
@@ -91,7 +97,8 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                     return EmptyState(
                       icon: Icons.description,
                       title: 'No records yet',
-                      subtitle: 'Add health records to keep track of your pet\'s medical history',
+                      subtitle:
+                          'Add health records to keep track of your pet\'s medical history',
                       actionLabel: 'Add Record',
                       onAction: () => _showAddRecord(petsAsync),
                     );
@@ -127,19 +134,25 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                 child: ChoiceChip(
                   label: const Text('All Pets'),
                   selected: _selectedPetId == null,
-                  selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+                  selectedColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.2,
+                  ),
                   onSelected: (_) => setState(() => _selectedPetId = null),
                 ),
               ),
-              ...pets.map((pet) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(pet.name),
-                      selected: _selectedPetId == pet.id,
-                      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
-                      onSelected: (_) => setState(() => _selectedPetId = pet.id),
+              ...pets.map(
+                (pet) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(pet.name),
+                    selected: _selectedPetId == pet.id,
+                    selectedColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.2,
                     ),
-                  )),
+                    onSelected: (_) => setState(() => _selectedPetId = pet.id),
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -151,8 +164,16 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
 
   Widget _buildTypeFilter() {
     final theme = Theme.of(context);
-    final types = ['all', 'checkup', 'surgery', 'illness', 'injury', 'dental', 'other'];
-    
+    final types = [
+      'all',
+      'checkup',
+      'surgery',
+      'illness',
+      'injury',
+      'dental',
+      'other',
+    ];
+
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -190,12 +211,17 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Theme.of(context).colorScheme.error,
+          ),
           const SizedBox(height: 16),
           Text('Error: $error'),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => ref.read(recordNotifierProvider.notifier).loadRecords(),
+            onPressed: () =>
+                ref.read(recordNotifierProvider.notifier).loadRecords(),
             child: const Text('Retry'),
           ),
         ],
@@ -205,14 +231,14 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
 
   Widget _buildRecordsList(List<VetRecord> records) {
     final groupedRecords = _groupByYear(records);
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: groupedRecords.length,
       itemBuilder: (context, index) {
         final year = groupedRecords.keys.elementAt(index);
         final yearRecords = groupedRecords[year]!;
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -223,17 +249,23 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         year.toString(),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -264,7 +296,7 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
 
   Widget _buildRecordCard(VetRecord record) {
     final theme = Theme.of(context);
-    
+
     return GestureDetector(
       onTap: () => _showEditRecord(record),
       child: Container(
@@ -301,11 +333,16 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                 children: [
                   Text(
                     record.title,
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -320,7 +357,11 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 14, color: theme.textTheme.labelMedium?.color),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: theme.textTheme.labelMedium?.color,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         DateFormat('MMM d, yyyy').format(record.date),
@@ -332,7 +373,11 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.local_hospital, size: 14, color: theme.textTheme.labelMedium?.color),
+                        Icon(
+                          Icons.local_hospital,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -352,7 +397,11 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                 padding: const EdgeInsets.only(top: 8),
                 child: Row(
                   children: [
-                    Icon(Icons.attach_file, size: 14, color: theme.colorScheme.primary),
+                    Icon(
+                      Icons.attach_file,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
                     const SizedBox(width: 4),
                     GestureDetector(
                       onTap: () => _viewDocument(record.docUrl!),
@@ -367,21 +416,21 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: PawThemeData.successGreen.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '\$${record.cost!.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: PawThemeData.successGreen,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: PawThemeData.successGreen.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '\$${record.cost!.toStringAsFixed(2)}',
+                style: TextStyle(
+                  color: PawThemeData.successGreen,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -390,15 +439,15 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
 
   List<VetRecord> _filterRecords(List<VetRecord> records) {
     var filtered = records;
-    
+
     if (_selectedPetId != null) {
       filtered = filtered.where((r) => r.petId == _selectedPetId).toList();
     }
-    
+
     if (_filterType != 'all') {
       filtered = filtered.where((r) => r.type == _filterType).toList();
     }
-    
+
     return filtered;
   }
 
@@ -412,14 +461,36 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
   }
 
   Future<void> _viewDocument(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open document')),
+    try {
+      final uri = Uri.parse(url);
+      // For Supabase storage URLs, ensure proper encoding
+      final encodedUri = Uri.parse(Uri.encodeComponent(url));
+
+      bool launched = false;
+
+      // Try with encoded URI first
+      if (await canLaunchUrl(encodedUri)) {
+        launched = await launchUrl(
+          encodedUri,
+          mode: LaunchMode.externalApplication,
         );
+      }
+
+      // If that didn't work, try original URL
+      if (!launched && await canLaunchUrl(uri)) {
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No app found to open this document')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -427,9 +498,9 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
   void _showAddRecord(AsyncValue<List> petsAsync) {
     petsAsync.whenData((pets) {
       if (pets.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Add a pet first')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Add a pet first')));
         return;
       }
 
@@ -460,27 +531,28 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
           children: [
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Text(
-                'Select Pet',
-                style: theme.textTheme.titleLarge,
+              child: Text('Select Pet', style: theme.textTheme.titleLarge),
+            ),
+            ...pets.map(
+              (pet) => ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.1,
+                  ),
+                  child: Text(pet.speciesEmoji),
+                ),
+                title: Text(pet.name),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddEditRecordScreen(petId: pet.id),
+                    ),
+                  );
+                },
               ),
             ),
-            ...pets.map((pet) => ListTile(
-              leading: CircleAvatar(
-                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-                child: Text(pet.speciesEmoji),
-              ),
-              title: Text(pet.name),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddEditRecordScreen(petId: pet.id),
-                  ),
-                );
-              },
-            )),
             const SizedBox(height: 16),
           ],
         ),
@@ -492,23 +564,28 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddEditRecordScreen(
-          petId: record.petId,
-          record: record,
-        ),
+        builder: (context) =>
+            AddEditRecordScreen(petId: record.petId, record: record),
       ),
     );
   }
 
   String _getTypeLabel(String type) {
     switch (type) {
-      case 'checkup': return 'Checkup';
-      case 'surgery': return 'Surgery';
-      case 'illness': return 'Illness';
-      case 'injury': return 'Injury';
-      case 'dental': return 'Dental';
-      case 'other': return 'Other';
-      default: return 'All';
+      case 'checkup':
+        return 'Checkup';
+      case 'surgery':
+        return 'Surgery';
+      case 'illness':
+        return 'Illness';
+      case 'injury':
+        return 'Injury';
+      case 'dental':
+        return 'Dental';
+      case 'other':
+        return 'Other';
+      default:
+        return 'All';
     }
   }
 }
@@ -523,7 +600,8 @@ class _AnimatedFab extends StatefulWidget {
   State<_AnimatedFab> createState() => _AnimatedFabState();
 }
 
-class _AnimatedFabState extends State<_AnimatedFab> with SingleTickerProviderStateMixin {
+class _AnimatedFabState extends State<_AnimatedFab>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -534,7 +612,10 @@ class _AnimatedFabState extends State<_AnimatedFab> with SingleTickerProviderSta
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
