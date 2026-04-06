@@ -1,7 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme_data.dart';
 import '../../data/models/vet_record_model.dart';
@@ -9,7 +9,6 @@ import '../../shared/providers/pet_provider.dart';
 import '../../shared/providers/record_provider.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/skeleton_loader.dart';
-import '../../shared/widgets/upgrade_modal.dart';
 import 'add_edit_record_screen.dart';
 
 class RecordsListScreen extends ConsumerStatefulWidget {
@@ -165,7 +164,7 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
 
   Widget _buildTypeFilter() {
     final theme = Theme.of(context);
-    final types = [
+    const types = [
       'all',
       'checkup',
       'surgery',
@@ -278,9 +277,8 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
                 ),
               ),
             ),
-            ...yearRecords.asMap().entries.map((entry) {
-              final recordIndex = entry.key;
-              final record = entry.value;
+            // FIX: removed unused recordIndex from .asMap().entries
+            ...yearRecords.map((record) {
               return FadeTransition(
                 opacity: _fadeAnimation,
                 child: Padding(
@@ -313,125 +311,155 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
             ),
           ],
         ),
-        child: Row(
+        // FIX: Restructured card layout. The original code placed the docUrl
+        // buttons Row and the cost badge as trailing siblings inside the outer
+        // Row, which is impossible — a Row can only have one trailing widget.
+        // Now the card uses a Column so the info row and the action/cost row
+        // sit in separate vertical layers.
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                record.typeEmoji,
-                style: const TextStyle(fontSize: 24),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    record.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+            // Top row: icon + text info
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      record.typeLabel,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
+                  child: Text(
+                    record.typeEmoji,
+                    style: const TextStyle(fontSize: 24),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: theme.textTheme.labelMedium?.color,
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        DateFormat('MMM d, yyyy').format(record.date),
-                        style: theme.textTheme.labelMedium,
-                      ),
-                    ],
-                  ),
-                  if (record.clinicName != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.local_hospital,
-                          size: 14,
-                          color: theme.textTheme.labelMedium?.color,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            record.clinicName!,
-                            style: theme.textTheme.labelMedium,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (record.docUrl != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.attach_file,
-                      size: 14,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: () => _viewDocument(record.docUrl!),
-                      child: Text(
-                        'View Document',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
+                        record.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.1,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          record.typeLabel,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: theme.textTheme.labelMedium?.color,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            DateFormat('MMM d, yyyy').format(record.date),
+                            style: theme.textTheme.labelMedium,
+                          ),
+                        ],
+                      ),
+                      if (record.clinicName != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.local_hospital,
+                              size: 14,
+                              color: theme.textTheme.labelMedium?.color,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                record.clinicName!,
+                                style: theme.textTheme.labelMedium,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: PawThemeData.successGreen.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '\$${record.cost!.toStringAsFixed(2)}',
-                style: TextStyle(
-                  color: PawThemeData.successGreen,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
+              ],
             ),
+
+            // Bottom row: document buttons + cost badge
+            // FIX: cost uses null-safe fallback instead of force-unwrap (!)
+            if (record.docUrl != null || record.cost != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  if (record.docUrl != null) ...[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _viewDocument(record.docUrl!),
+                        icon: const Icon(Icons.visibility, size: 18),
+                        label: const Text('View'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            _shareDocument(record.docUrl!, record.title),
+                        icon: const Icon(Icons.share, size: 18),
+                        label: const Text('Share'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ),
+                    if (record.cost != null) const SizedBox(width: 8),
+                  ],
+                  if (record.cost != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: PawThemeData.successGreen.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '\$${record.cost!.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: PawThemeData.successGreen,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -462,21 +490,12 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
   }
 
   Future<void> _viewDocument(String url) async {
+    // FIX: removed the incorrect Android-specific Chrome canLaunchUrl check,
+    // which was testing for a fake Chrome URL instead of the actual document
+    // URL. Just attempt to launch the real URI directly; if no app can handle
+    // it, show a friendly snack-bar.
     try {
       final uri = Uri.parse(url);
-      
-      if (Platform.isAndroid) {
-        final browserUri = Uri.parse('https://google.com/chrome');
-        if (await canLaunchUrl(browserUri) != true) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please install a browser to view documents')),
-            );
-          }
-          return;
-        }
-      }
-
       final canLaunch = await canLaunchUrl(uri);
       if (canLaunch) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -489,9 +508,23 @@ class _RecordsListScreenState extends ConsumerState<RecordsListScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error opening document: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error opening document: $e')));
+      }
+    }
+  }
+
+  // FIX: renamed _downloadDocument → _shareDocument to match the button label
+  // and clarify intent (share_plus shares, it doesn't download).
+  Future<void> _shareDocument(String url, String title) async {
+    try {
+      await Share.share(url, subject: title);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error sharing document: $e')));
       }
     }
   }

@@ -35,6 +35,7 @@ dependencies:
   pdf: any
   printing: any
   google_sign_in: any
+  http: any
 
 dev_dependencies:
   flutter_test:
