@@ -31,6 +31,7 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
   DateTime? _dob;
   bool _neutered = false;
   bool _isLoading = false;
+  bool _isUploadingPhoto = false;
   String? _photoUrl;
 
   bool get isEditing => widget.pet != null;
@@ -66,8 +67,15 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 80,
+    );
     if (image != null) {
+      // For Android, the path might be a content:// URI
+      // The File constructor works with both file:// and content:// on modern Flutter
       setState(() => _photoUrl = image.path);
     }
   }
@@ -96,24 +104,41 @@ class _AddEditPetScreenState extends ConsumerState<AddEditPetScreen> {
 
       String? uploadedPhotoUrl;
       
-      if (_photoUrl != null && !_photoUrl!.startsWith('/') && !_photoUrl!.startsWith('http')) {
+      // Handle both file paths and content URIs
+      if (_photoUrl != null && !_photoUrl!.startsWith('http')) {
+        setState(() => _isUploadingPhoto = true);
         try {
-          final file = File(_photoUrl!);
-          if (await file.exists()) {
-            final supabase = Supabase.instance.client;
-            final user = supabase.auth.currentUser;
-            if (user != null) {
-              final fileName = '${user.id}/pets/${DateTime.now().millisecondsSinceEpoch}';
+          final supabase = Supabase.instance.client;
+          final user = supabase.auth.currentUser;
+          if (user != null) {
+            File file;
+            
+            // Handle content:// URIs from image_picker (Android)
+            if (_photoUrl!.startsWith('content://')) {
+              // Copy the content URI to a temporary file
+              final tempDir = Directory.systemTemp;
+              final tempFile = File('${tempDir.path}/temp_pet_${DateTime.now().millisecondsSinceEpoch}.jpg');
+              await tempFile.writeAsBytes(await File(_photoUrl!).readAsBytes());
+              file = tempFile;
+            } else {
+              file = File(_photoUrl!);
+            }
+            
+            if (await file.exists()) {
+              final fileName = '${user.id}/pets/${DateTime.now().millisecondsSinceEpoch}.jpg';
               await supabase.storage.from('pet-photos').upload(fileName, file);
               uploadedPhotoUrl = supabase.storage.from('pet-photos').getPublicUrl(fileName);
             }
           }
         } catch (e) {
+          debugPrint('Photo upload error: $e');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to upload photo: $e')),
             );
           }
+        } finally {
+          setState(() => _isUploadingPhoto = false);
         }
       } else if (_photoUrl != null && _photoUrl!.startsWith('http')) {
         uploadedPhotoUrl = _photoUrl;
