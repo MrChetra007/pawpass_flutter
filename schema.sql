@@ -241,6 +241,17 @@ create table public.medications (
   name          text not null,
   dosage        text,
   frequency     text,
+  
+  -- Meal timing
+  meal_timing   text check (meal_timing in ('before_meal', 'after_meal', 'with_meal', 'any')) default 'any',
+  
+  -- Frequency details
+  frequency_type text check (frequency_type in ('daily', 'weekly', 'monthly')) default 'daily',
+  frequency_times integer default 1,
+  
+  -- Time of day (can select multiple)
+  time_of_day   text[] default '{}',
+  
   start_date    date,
   end_date      date,
   prescribed_by text,

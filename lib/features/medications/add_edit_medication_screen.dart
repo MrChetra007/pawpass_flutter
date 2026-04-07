@@ -26,6 +26,10 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
   final _notesController = TextEditingController();
 
   String? _selectedFrequency;
+  String? _selectedMealTiming;
+  String? _selectedFrequencyType;
+  int _frequencyTimes = 1;
+  final Set<String> _selectedTimesOfDay = {};
   DateTime? _startDate;
   DateTime? _endDate;
   bool _isActive = true;
@@ -40,6 +44,10 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
       _nameController.text = widget.medication.name;
       _dosageController.text = widget.medication.dosage ?? '';
       _selectedFrequency = widget.medication.frequency;
+      _selectedMealTiming = widget.medication.mealTiming;
+      _selectedFrequencyType = widget.medication.frequencyType;
+      _frequencyTimes = widget.medication.frequencyTimes ?? 1;
+      _selectedTimesOfDay.addAll(widget.medication.timeOfDay);
       _startDate = widget.medication.startDate;
       _endDate = widget.medication.endDate;
       _prescribedByController.text = widget.medication.prescribedBy ?? '';
@@ -83,29 +91,41 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedFrequencyType != null && _selectedTimesOfDay.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one time of day')),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
+      final data = {
+        'name': _nameController.text.trim(),
+        'dosage': _dosageController.text.trim().isNotEmpty
+            ? _dosageController.text.trim()
+            : null,
+        'frequency': _selectedFrequency,
+        'meal_timing': _selectedMealTiming,
+        'frequency_type': _selectedFrequencyType,
+        'frequency_times': _frequencyTimes,
+        'time_of_day': _selectedTimesOfDay.toList(),
+        'start_date': _startDate?.toIso8601String().split('T').first,
+        'end_date': _endDate?.toIso8601String().split('T').first,
+        'prescribed_by': _prescribedByController.text.trim().isNotEmpty
+            ? _prescribedByController.text.trim()
+            : null,
+        'notes': _notesController.text.trim().isNotEmpty
+            ? _notesController.text.trim()
+            : null,
+      };
+
       if (isEditing) {
+        data['is_active'] = _isActive;
         await ref.read(medicationNotifierProvider.notifier).updateMedication(
               widget.medication.id,
-              {
-                'name': _nameController.text.trim(),
-                'dosage': _dosageController.text.trim().isNotEmpty
-                    ? _dosageController.text.trim()
-                    : null,
-                'frequency': _selectedFrequency,
-                'start_date': _startDate?.toIso8601String().split('T').first,
-                'end_date': _endDate?.toIso8601String().split('T').first,
-                'prescribed_by': _prescribedByController.text.trim().isNotEmpty
-                    ? _prescribedByController.text.trim()
-                    : null,
-                'notes': _notesController.text.trim().isNotEmpty
-                    ? _notesController.text.trim()
-                    : null,
-                'is_active': _isActive,
-              },
+              data,
             );
       } else {
         await ref.read(medicationNotifierProvider.notifier).createMedication(
@@ -115,6 +135,10 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
                   ? _dosageController.text.trim()
                   : null,
               frequency: _selectedFrequency,
+              mealTiming: _selectedMealTiming,
+              frequencyType: _selectedFrequencyType,
+              frequencyTimes: _frequencyTimes,
+              timeOfDay: _selectedTimesOfDay.toList(),
               startDate: _startDate,
               endDate: _endDate,
               prescribedBy: _prescribedByController.text.trim().isNotEmpty
@@ -182,23 +206,150 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
               ),
             ),
             const SizedBox(height: 24),
-            Text('Frequency', style: theme.textTheme.labelLarge),
+            Text('Meal Timing', style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: SupabaseConstants.medicationFrequencies.map((freq) {
-                return ChoiceChip(
-                  label: Text(freq),
-                  selected: _selectedFrequency == freq.toLowerCase(),
-                  onSelected: (_) {
-                    setState(() {
-                      _selectedFrequency = freq.toLowerCase();
-                    });
-                  },
-                );
-              }).toList(),
+              children: [
+                ChoiceChip(
+                  label: const Text('Any'),
+                  selected: _selectedMealTiming == null || _selectedMealTiming == 'any',
+                  onSelected: (_) => setState(() => _selectedMealTiming = 'any'),
+                ),
+                ChoiceChip(
+                  label: const Text('Before Meal'),
+                  selected: _selectedMealTiming == 'before_meal',
+                  onSelected: (_) => setState(() => _selectedMealTiming = 'before_meal'),
+                ),
+                ChoiceChip(
+                  label: const Text('After Meal'),
+                  selected: _selectedMealTiming == 'after_meal',
+                  onSelected: (_) => setState(() => _selectedMealTiming = 'after_meal'),
+                ),
+                ChoiceChip(
+                  label: const Text('With Meal'),
+                  selected: _selectedMealTiming == 'with_meal',
+                  onSelected: (_) => setState(() => _selectedMealTiming = 'with_meal'),
+                ),
+              ],
             ),
+            const SizedBox(height: 24),
+            Text('Frequency Type', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChoiceChip(
+                  label: const Text('Daily'),
+                  selected: _selectedFrequencyType == 'daily',
+                  onSelected: (_) => setState(() {
+                    _selectedFrequencyType = 'daily';
+                    if (_selectedTimesOfDay.isEmpty) _selectedTimesOfDay.add('morning');
+                  }),
+                ),
+                ChoiceChip(
+                  label: const Text('Weekly'),
+                  selected: _selectedFrequencyType == 'weekly',
+                  onSelected: (_) => setState(() {
+                    _selectedFrequencyType = 'weekly';
+                    if (_selectedTimesOfDay.isEmpty) _selectedTimesOfDay.add('morning');
+                  }),
+                ),
+                ChoiceChip(
+                  label: const Text('Monthly'),
+                  selected: _selectedFrequencyType == 'monthly',
+                  onSelected: (_) => setState(() {
+                    _selectedFrequencyType = 'monthly';
+                    if (_selectedTimesOfDay.isEmpty) _selectedTimesOfDay.add('morning');
+                  }),
+                ),
+              ],
+            ),
+            if (_selectedFrequencyType != null) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text('Times per $_selectedFrequencyType:', style: theme.textTheme.bodyMedium),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: _frequencyTimes > 1
+                        ? () => setState(() => _frequencyTimes--)
+                        : null,
+                  ),
+                  Text('$_frequencyTimes', style: theme.textTheme.titleMedium),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: _frequencyTimes < 10
+                        ? () => setState(() => _frequencyTimes++)
+                        : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text('Time of Day', style: theme.textTheme.labelLarge),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilterChip(
+                    label: const Text('Morning'),
+                    selected: _selectedTimesOfDay.contains('morning'),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedTimesOfDay.add('morning');
+                        } else {
+                          _selectedTimesOfDay.remove('morning');
+                        }
+                      });
+                    },
+                  ),
+                  FilterChip(
+                    label: const Text('Afternoon'),
+                    selected: _selectedTimesOfDay.contains('afternoon'),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedTimesOfDay.add('afternoon');
+                        } else {
+                          _selectedTimesOfDay.remove('afternoon');
+                        }
+                      });
+                    },
+                  ),
+                  FilterChip(
+                    label: const Text('Evening'),
+                    selected: _selectedTimesOfDay.contains('evening'),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedTimesOfDay.add('evening');
+                        } else {
+                          _selectedTimesOfDay.remove('evening');
+                        }
+                      });
+                    },
+                  ),
+                  FilterChip(
+                    label: const Text('Night'),
+                    selected: _selectedTimesOfDay.contains('night'),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedTimesOfDay.add('night');
+                        } else {
+                          _selectedTimesOfDay.remove('night');
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 24),
             Row(
               children: [

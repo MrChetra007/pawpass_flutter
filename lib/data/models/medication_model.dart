@@ -5,6 +5,10 @@ class Medication {
   final String name;
   final String? dosage;
   final String? frequency;
+  final String? mealTiming;
+  final String? frequencyType;
+  final int? frequencyTimes;
+  final List<String> timeOfDay;
   final DateTime? startDate;
   final DateTime? endDate;
   final String? prescribedBy;
@@ -20,6 +24,10 @@ class Medication {
     required this.name,
     this.dosage,
     this.frequency,
+    this.mealTiming,
+    this.frequencyType,
+    this.frequencyTimes,
+    this.timeOfDay = const [],
     this.startDate,
     this.endDate,
     this.prescribedBy,
@@ -37,6 +45,10 @@ class Medication {
       name: json['name'] as String,
       dosage: json['dosage'] as String?,
       frequency: json['frequency'] as String?,
+      mealTiming: json['meal_timing'] as String?,
+      frequencyType: json['frequency_type'] as String?,
+      frequencyTimes: json['frequency_times'] as int?,
+      timeOfDay: (json['time_of_day'] as List<dynamic>?)?.cast<String>() ?? [],
       startDate: json['start_date'] != null ? DateTime.parse(json['start_date'] as String) : null,
       endDate: json['end_date'] != null ? DateTime.parse(json['end_date'] as String) : null,
       prescribedBy: json['prescribed_by'] as String?,
@@ -54,6 +66,10 @@ class Medication {
       'name': name,
       if (dosage != null) 'dosage': dosage,
       if (frequency != null) 'frequency': frequency,
+      if (mealTiming != null) 'meal_timing': mealTiming,
+      if (frequencyType != null) 'frequency_type': frequencyType,
+      if (frequencyTimes != null) 'frequency_times': frequencyTimes,
+      if (timeOfDay.isNotEmpty) 'time_of_day': timeOfDay,
       if (startDate != null) 'start_date': startDate!.toIso8601String().split('T').first,
       if (endDate != null) 'end_date': endDate!.toIso8601String().split('T').first,
       if (prescribedBy != null) 'prescribed_by': prescribedBy,
@@ -70,5 +86,24 @@ class Medication {
       case 'as needed': return 'As Needed';
       default: return frequency ?? 'Custom';
     }
+  }
+
+  String get mealTimingLabel {
+    switch (mealTiming) {
+      case 'before_meal': return 'Before Meal';
+      case 'after_meal': return 'After Meal';
+      case 'with_meal': return 'With Meal';
+      default: return 'Any';
+    }
+  }
+
+  String get timeOfDayLabel {
+    if (timeOfDay.isEmpty) return '';
+    final labels = <String>[];
+    if (timeOfDay.contains('morning')) labels.add('Morning');
+    if (timeOfDay.contains('afternoon')) labels.add('Afternoon');
+    if (timeOfDay.contains('evening')) labels.add('Evening');
+    if (timeOfDay.contains('night')) labels.add('Night');
+    return labels.join(', ');
   }
 }

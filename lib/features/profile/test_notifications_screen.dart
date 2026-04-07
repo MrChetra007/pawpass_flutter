@@ -30,13 +30,38 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
   }
 
   Future<void> _toggleNotifications(bool value) async {
+    if (value) {
+      final granted = await NotificationService().requestPermission();
+      if (!granted) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Permission Required'),
+              content: const Text(
+                'Please enable notifications in your device settings to receive alerts for appointments and vaccines.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+    } else {
+      await NotificationService().cancelAllNotifications();
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notifications_enabled', value);
     setState(() {
       _notificationsEnabled = value;
     });
     if (!value && mounted) {
-      await NotificationService().cancelAllNotifications();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Notifications disabled')),
       );

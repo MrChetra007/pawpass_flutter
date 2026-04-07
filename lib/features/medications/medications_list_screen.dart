@@ -352,6 +352,41 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                       ],
                     ),
                   ],
+                  if (medication.frequencyType != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.repeat, size: 14, color: theme.textTheme.labelMedium?.color),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${medication.frequencyTimes ?? 1}x ${medication.frequencyType}',
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        if (medication.timeOfDayLabel.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '(${medication.timeOfDayLabel})',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                  if (medication.mealTiming != null && medication.mealTiming != 'any') ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.restaurant, size: 14, color: theme.textTheme.labelMedium?.color),
+                        const SizedBox(width: 4),
+                        Text(
+                          medication.mealTimingLabel,
+                          style: theme.textTheme.labelMedium,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
