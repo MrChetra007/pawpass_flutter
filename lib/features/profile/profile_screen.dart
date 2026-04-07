@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import '../../core/theme/app_theme_data.dart';
 import '../../shared/providers/auth_notifier.dart';
@@ -356,7 +357,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
           _buildDivider(),
           _buildSettingsTile(context, icon: Icons.description_outlined, title: 'Terms of Service', onTap: () => context.push('/profile/terms-of-service')),
           _buildDivider(),
-          _buildSettingsTile(context, icon: Icons.star_outline, title: 'Rate PawPass', onTap: () {}),
+          _buildSettingsTile(context, icon: Icons.star_outline, title: 'Rate PawPass', onTap: () => launchUrl(Uri.parse('https://play.google.com/store/apps/details?id=com.sozin.pawpass'))),
         ],
       ),
     );
