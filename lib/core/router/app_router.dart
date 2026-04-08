@@ -224,12 +224,11 @@ class _MainShellState extends ConsumerState<MainShell>
     return 0;
   }
 
-  void _onItemTapped(int index, BuildContext context) async {
-    if (index != _currentIndex) {
-      await _controller.forward();
-      await _controller.reverse();
-      setState(() => _currentIndex = index);
-    }
+  void _onItemTapped(int index, BuildContext context) {
+    if (index == _currentIndex) return;
+
+    setState(() => _currentIndex = index);
+
     switch (index) {
       case 0:
         context.go('/home');
