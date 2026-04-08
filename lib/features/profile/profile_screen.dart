@@ -18,7 +18,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProviderStateMixin {
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   bool _notificationsEnabled = true;
@@ -41,7 +42,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
       final prefs = await SharedPreferences.getInstance();
       if (mounted) {
         setState(() {
-          _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+          _notificationsEnabled =
+              prefs.getBool('notifications_enabled') ?? true;
         });
       }
     });
@@ -77,7 +79,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                     children: [
                       Text('Profile', style: theme.textTheme.headlineMedium),
                       const SizedBox(height: 4),
-                      Text('Manage your account', style: theme.textTheme.labelLarge),
+                      Text(
+                        'Manage your account',
+                        style: theme.textTheme.labelLarge,
+                      ),
                     ],
                   ),
                 ),
@@ -141,7 +146,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
     );
   }
 
-  Widget _buildProfileCard(BuildContext context, AsyncValue user, ThemeData theme) {
+  Widget _buildProfileCard(
+    BuildContext context,
+    AsyncValue user,
+    ThemeData theme,
+  ) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -176,7 +185,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                                 gradient: LinearGradient(
                                   colors: [
                                     theme.colorScheme.primary,
-                                    theme.colorScheme.primary.withValues(alpha: 0.7),
+                                    theme.colorScheme.primary.withValues(
+                                      alpha: 0.7,
+                                    ),
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -184,7 +195,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                                    color: theme.colorScheme.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
@@ -219,7 +232,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                 const SizedBox(height: 16),
                 Text(
                   u?.fullName ?? 'Pet Lover',
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -245,14 +260,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              letterSpacing: 1.2,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.labelLarge?.copyWith(letterSpacing: 1.2),
       ),
     );
   }
 
-  Widget _buildSettingsCard(BuildContext context, ThemeData theme, PawThemeData themeData) {
+  Widget _buildSettingsCard(
+    BuildContext context,
+    ThemeData theme,
+    PawThemeData themeData,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -351,19 +370,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
       ),
       child: Column(
         children: [
-          _buildSettingsTile(context, icon: Icons.help_outline, title: 'Help & FAQ', onTap: () => context.push('/profile/help-faq')),
+          _buildSettingsTile(
+            context,
+            icon: Icons.help_outline,
+            title: 'Help & FAQ',
+            onTap: () => context.push('/profile/help-faq'),
+          ),
           _buildDivider(),
-          _buildSettingsTile(context, icon: Icons.privacy_tip_outlined, title: 'Privacy Policy', onTap: () => context.push('/profile/privacy-policy')),
+          _buildSettingsTile(
+            context,
+            icon: Icons.privacy_tip_outlined,
+            title: 'Privacy Policy',
+            onTap: () => context.push('/profile/privacy-policy'),
+          ),
           _buildDivider(),
-          _buildSettingsTile(context, icon: Icons.description_outlined, title: 'Terms of Service', onTap: () => context.push('/profile/terms-of-service')),
+          _buildSettingsTile(
+            context,
+            icon: Icons.description_outlined,
+            title: 'Terms of Service',
+            onTap: () => context.push('/profile/terms-of-service'),
+          ),
           _buildDivider(),
-          _buildSettingsTile(context, icon: Icons.star_outline, title: 'Rate PawPass', onTap: () => launchUrl(Uri.parse('https://play.google.com/store/apps/details?id=com.sozin.pawpass'))),
+          _buildSettingsTile(
+            context,
+            icon: Icons.star_outline,
+            title: 'Rate PawPass',
+            onTap: () => launchUrl(
+              Uri.parse(
+                'https://play.google.com/store/apps/details?id=com.sozin.pawpass',
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAccountCard(BuildContext context, ThemeData theme, WidgetRef ref) {
+  Widget _buildAccountCard(
+    BuildContext context,
+    ThemeData theme,
+    WidgetRef ref,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -424,7 +471,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (iconColor ?? theme.colorScheme.primary).withValues(alpha: 0.1),
+                  color: (iconColor ?? theme.colorScheme.primary).withValues(
+                    alpha: 0.1,
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -519,7 +568,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
     final nameController = TextEditingController(text: user?.fullName ?? '');
     final theme = Theme.of(context);
     File? selectedAvatar;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -541,7 +590,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
             children: [
               Text(
                 'Edit Profile',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 24),
               Center(
@@ -566,24 +617,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                               radius: 40,
                               backgroundImage: FileImage(selectedAvatar!),
                             )
-                          : user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
-                              ? CircleAvatar(
-                                  radius: 40,
-                                  backgroundImage: NetworkImage(user.avatarUrl!),
-                                )
-                              : Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 40,
-                                    color: theme.colorScheme.primary,
-                                  ),
+                          : user?.avatarUrl != null &&
+                                user!.avatarUrl!.isNotEmpty
+                          ? CircleAvatar(
+                              radius: 40,
+                              backgroundImage: NetworkImage(user.avatarUrl!),
+                            )
+                          : Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.2,
                                 ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.person,
+                                size: 40,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
                       Positioned(
                         bottom: 0,
                         right: 0,
@@ -620,7 +674,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => _updateProfile(context, nameController.text.trim(), selectedAvatar),
+                  onPressed: () => _updateProfile(
+                    context,
+                    nameController.text.trim(),
+                    selectedAvatar,
+                  ),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -637,45 +695,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
     );
   }
 
-  Future<void> _updateProfile(BuildContext context, String fullName, File? avatar) async {
+  Future<void> _updateProfile(
+    BuildContext context,
+    String fullName,
+    File? avatar,
+  ) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final screenContext = context;
-    
+
     try {
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
-      
+
       if (user != null) {
         String? avatarUrl;
-        
+
         if (avatar != null) {
           scaffoldMessenger.showSnackBar(
             const SnackBar(content: Text('Uploading avatar...')),
           );
-          
-          final fileName = '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}';
-          
-          await supabase.storage
-            .from('avatars')
-            .upload(fileName, avatar);
-          
-          avatarUrl = supabase.storage
-            .from('avatars')
-            .getPublicUrl(fileName);
+
+          final fileName =
+              '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}';
+
+          await supabase.storage.from('avatars').upload(fileName, avatar);
+
+          avatarUrl = supabase.storage.from('avatars').getPublicUrl(fileName);
         }
-        
+
         final updateData = {
           'full_name': fullName,
           if (avatarUrl != null) 'avatar_url': avatarUrl,
         };
-        
-        await supabase
-            .from('users')
-            .update(updateData)
-            .eq('id', user.id);
-        
+
+        await supabase.from('users').update(updateData).eq('id', user.id);
+
         ref.invalidate(up.userProvider);
-        
+
         if (mounted) {
           Navigator.pop(screenContext);
           scaffoldMessenger.showSnackBar(
@@ -717,9 +773,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
               Navigator.pop(context);
               await _deleteAccount();
             },
-            style: TextButton.styleFrom(
-              foregroundColor: PawThemeData.alertRed,
-            ),
+            style: TextButton.styleFrom(foregroundColor: PawThemeData.alertRed),
             child: const Text('Delete'),
           ),
         ],
@@ -728,21 +782,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   }
 
   Future<void> _deleteAccount() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final loadingSnackBar = scaffoldMessenger.showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 16),
+            Text('Deleting account...'),
+          ],
+        ),
+        duration: Duration(seconds: 10),
+      ),
+    );
+
     try {
-      await ref.read(authNotifierProvider.notifier).deleteAccount();
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account deleted successfully'),
+      final success = await ref
+          .read(authNotifierProvider.notifier)
+          .deleteAccount();
+      loadingSnackBar.close();
+
+      if (success) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: const Text('Account deleted successfully'),
             backgroundColor: PawThemeData.successGreen,
           ),
         );
-        context.go('/login');
+        if (mounted) {
+          context.go('/login');
+        }
       }
     } catch (e) {
+      loadingSnackBar.close();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('Error deleting account: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,

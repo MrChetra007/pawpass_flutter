@@ -429,3 +429,30 @@ create policy "Anyone can view avatars"
 --
 -- All tables have RLS — users can only access their own data.
 -- ============================================================
+
+
+-- for deleted user own data
+CREATE POLICY "Users can delete own account"
+ON users FOR DELETE
+USING (auth.uid() = id);
+CREATE POLICY "Users can delete own pets"
+ON pets FOR DELETE
+USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own vet records"
+ON vet_records FOR DELETE
+USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own vaccines"
+ON vaccines FOR DELETE
+USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own appointments"
+ON appointments FOR DELETE
+USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own medications"
+ON medications FOR DELETE
+USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own weight logs"
+ON weight_logs FOR DELETE
+USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own family members"
+ON family_members FOR DELETE
+USING (auth.uid() = owner_id);

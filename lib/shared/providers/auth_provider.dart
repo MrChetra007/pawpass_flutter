@@ -104,8 +104,17 @@ class AuthRepository {
 
   Future<void> deleteAccount() async {
     final user = _supabase.auth.currentUser;
-    if (user != null) {
-      await _supabase.auth.admin.deleteUser(user.id);
-    }
+    if (user == null) return;
+
+    final session = _supabase.auth.currentSession;
+    if (session == null) return;
+
+    await _supabase.functions.invoke(
+      'delete-user',
+      headers: {'Authorization': 'Bearer ${session.accessToken}'},
+    );
+
+    await _googleSignIn.signOut();
+    await _supabase.auth.signOut();
   }
 }

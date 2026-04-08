@@ -76,13 +76,18 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  Future<void> deleteAccount() async {
+  Future<bool> deleteAccount() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await ref.read(authRepositoryProvider).deleteAccount();
       state = state.copyWith(isLoading: false);
+      return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: 'Failed to delete account');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to delete account: $e',
+      );
+      return false;
     }
   }
 

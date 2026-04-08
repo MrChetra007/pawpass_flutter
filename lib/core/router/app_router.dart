@@ -37,7 +37,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (context, state) async {
       final isLoggedIn = authState.value != null;
-      final isAuthRoute = state.matchedLocation == '/login' ||
+      final isAuthRoute =
+          state.matchedLocation == '/login' ||
           state.matchedLocation == '/register' ||
           state.matchedLocation == '/forgot-password' ||
           state.matchedLocation == '/';
@@ -49,7 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (!isLoggedIn && !isAuthRoute && !isOnboardingRoute) {
         return '/login';
       }
-      
+
       if (isLoggedIn && isOnboardingRoute) {
         final supabase = Supabase.instance.client;
         final user = supabase.auth.currentUser;
@@ -59,14 +60,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               .select('is_onboarding')
               .eq('id', user.id)
               .maybeSingle();
-          
+
           final isOnboarding = userData?['is_onboarding'] as bool? ?? true;
           if (!isOnboarding) {
             return '/home';
           }
         }
       }
-      
+
       if (isLoggedIn && (isAuthRoute || state.matchedLocation == '/')) {
         final supabase = Supabase.instance.client;
         final user = supabase.auth.currentUser;
@@ -76,9 +77,11 @@ final routerProvider = Provider<GoRouter>((ref) {
               .select('is_onboarding')
               .eq('id', user.id)
               .maybeSingle();
-          
-          final isOnboarding = userData?['is_onboarding'] as bool? ?? true;
-          if (isOnboarding) {
+
+          final isOnboarding = userData?['is_onboarding'];
+          if (isOnboarding == null ||
+              isOnboarding == '' ||
+              isOnboarding == true) {
             return '/onboarding';
           }
         }
@@ -87,14 +90,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const LandingPage(),
-      ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const LandingPage()),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
@@ -192,7 +189,8 @@ class MainShell extends ConsumerStatefulWidget {
   ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends ConsumerState<MainShell> with SingleTickerProviderStateMixin {
+class _MainShellState extends ConsumerState<MainShell>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   int _currentIndex = 0;
@@ -204,9 +202,10 @@ class _MainShellState extends ConsumerState<MainShell> with SingleTickerProvider
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.85,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -257,11 +256,31 @@ class _MainShellState extends ConsumerState<MainShell> with SingleTickerProvider
     final theme = Theme.of(context);
 
     final navItems = [
-      _NavItemData(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
-      _NavItemData(icon: Icons.pets_outlined, activeIcon: Icons.pets, label: 'Pets'),
-      _NavItemData(icon: Icons.description_outlined, activeIcon: Icons.description, label: 'Records'),
-      _NavItemData(icon: Icons.calendar_today_outlined, activeIcon: Icons.calendar_today, label: 'Appts'),
-      _NavItemData(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
+      _NavItemData(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home,
+        label: 'Home',
+      ),
+      _NavItemData(
+        icon: Icons.pets_outlined,
+        activeIcon: Icons.pets,
+        label: 'Pets',
+      ),
+      _NavItemData(
+        icon: Icons.description_outlined,
+        activeIcon: Icons.description,
+        label: 'Records',
+      ),
+      _NavItemData(
+        icon: Icons.calendar_today_outlined,
+        activeIcon: Icons.calendar_today,
+        label: 'Appts',
+      ),
+      _NavItemData(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: 'Profile',
+      ),
     ];
 
     return Scaffold(
@@ -306,7 +325,11 @@ class _NavItemData {
   final IconData activeIcon;
   final String label;
 
-  _NavItemData({required this.icon, required this.activeIcon, required this.label});
+  _NavItemData({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 }
 
 class _DuolingoNavItem extends StatefulWidget {
@@ -330,7 +353,8 @@ class _DuolingoNavItem extends StatefulWidget {
   State<_DuolingoNavItem> createState() => _DuolingoNavItemState();
 }
 
-class _DuolingoNavItemState extends State<_DuolingoNavItem> with SingleTickerProviderStateMixin {
+class _DuolingoNavItemState extends State<_DuolingoNavItem>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _bounceAnimation;
@@ -342,12 +366,14 @@ class _DuolingoNavItemState extends State<_DuolingoNavItem> with SingleTickerPro
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
-    );
-    _bounceAnimation = Tween<double>(begin: 0.0, end: -4.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.2,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+    _bounceAnimation = Tween<double>(
+      begin: 0.0,
+      end: -4.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     if (widget.isSelected) {
       _controller.forward();
     }
@@ -392,7 +418,9 @@ class _DuolingoNavItemState extends State<_DuolingoNavItem> with SingleTickerPro
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: widget.isSelected
-                            ? widget.theme.colorScheme.primary.withValues(alpha: 0.15)
+                            ? widget.theme.colorScheme.primary.withValues(
+                                alpha: 0.15,
+                              )
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -400,7 +428,9 @@ class _DuolingoNavItemState extends State<_DuolingoNavItem> with SingleTickerPro
                         widget.isSelected ? widget.activeIcon : widget.icon,
                         color: widget.isSelected
                             ? widget.theme.colorScheme.primary
-                            : widget.theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                            : widget.theme.colorScheme.onSurface.withValues(
+                                alpha: 0.5,
+                              ),
                         size: 26,
                       ),
                     ),
@@ -411,10 +441,14 @@ class _DuolingoNavItemState extends State<_DuolingoNavItem> with SingleTickerPro
                   duration: const Duration(milliseconds: 200),
                   style: TextStyle(
                     fontSize: widget.isSelected ? 12 : 11,
-                    fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: widget.isSelected
+                        ? FontWeight.w600
+                        : FontWeight.w500,
                     color: widget.isSelected
                         ? widget.theme.colorScheme.primary
-                        : widget.theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        : widget.theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
                   ),
                   child: Text(widget.label),
                 ),

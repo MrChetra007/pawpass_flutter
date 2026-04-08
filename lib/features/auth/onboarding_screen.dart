@@ -17,7 +17,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _petNameController = TextEditingController();
@@ -82,19 +82,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _requestNotificationPermission() async {
     final plugin = FlutterLocalNotificationsPlugin();
-    final android = plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final android = plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     await android?.requestNotificationsPermission();
   }
 
-  Future<String?> _uploadImage(String path, String bucket, String folder) async {
+  Future<String?> _uploadImage(
+    String path,
+    String bucket,
+    String folder,
+  ) async {
     final file = File(path);
     final fileName = '$folder/${DateTime.now().millisecondsSinceEpoch}';
-    
-    await Supabase.instance.client.storage
-        .from(bucket)
-        .upload(fileName, file);
-    
+
+    await Supabase.instance.client.storage.from(bucket).upload(fileName, file);
+
     final url = Supabase.instance.client.storage
         .from(bucket)
         .getPublicUrl(fileName);
@@ -114,7 +118,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
-      
+
       if (user == null) {
         if (mounted) context.go('/login');
         return;
@@ -125,28 +129,43 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         avatarUrl = await _uploadImage(_photoPath!, 'avatars', user.id);
       }
 
-      await supabase.from('users').update({
-        'full_name': _nameController.text.trim(),
-        'avatar_url': avatarUrl,
-        'is_onboarding': false,
-      }).eq('id', user.id);
+      await supabase
+          .from('users')
+          .update({
+            'full_name': _nameController.text.trim(),
+            'avatar_url': avatarUrl,
+            'is_onboarding': false,
+          })
+          .eq('id', user.id);
 
       if (_petNameController.text.isNotEmpty) {
         String? petPhotoUrl;
         if (_petPhotoPath != null) {
-          petPhotoUrl = await _uploadImage(_petPhotoPath!, 'pet-photos', user.id);
+          petPhotoUrl = await _uploadImage(
+            _petPhotoPath!,
+            'pet-photos',
+            user.id,
+          );
         }
 
         await supabase.from('pets').insert({
           'user_id': user.id,
           'name': _petNameController.text.trim(),
           'species': _selectedSpecies,
-          'breed': _breedController.text.trim().isEmpty ? null : _breedController.text.trim(),
+          'breed': _breedController.text.trim().isEmpty
+              ? null
+              : _breedController.text.trim(),
           'gender': _selectedGender,
           'dob': _dob?.toIso8601String(),
-          'weight_kg': _weightController.text.isEmpty ? null : double.tryParse(_weightController.text),
-          'microchip': _microchipController.text.trim().isEmpty ? null : _microchipController.text.trim(),
-          'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          'weight_kg': _weightController.text.isEmpty
+              ? null
+              : double.tryParse(_weightController.text),
+          'microchip': _microchipController.text.trim().isEmpty
+              ? null
+              : _microchipController.text.trim(),
+          'notes': _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
           'neutered': _neutered,
           'photo_url': petPhotoUrl,
         });
@@ -160,9 +179,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) {
@@ -235,20 +254,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   Expanded(
                     flex: _currentPage == 0 ? 1 : 1,
                     child: FilledButton(
-                      onPressed: _isLoading ? null : () {
-                        if (_currentPage == 2) {
-                          _saveOnboarding();
-                        } else {
-                          _nextPage();
-                        }
-                      },
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              if (_currentPage == 2) {
+                                _saveOnboarding();
+                              } else {
+                                _nextPage();
+                              }
+                            },
                       child: _isLoading
                           ? const SizedBox(
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Text(_currentPage == 2 ? 'Get Started' : 'Continue'),
+                          : Text(
+                              _currentPage == 2 ? 'Get Started' : 'Continue',
+                            ),
                     ),
                   ),
                 ],
@@ -268,11 +291,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Welcome to PawPass!',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Welcome to PawPass!',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    await Supabase.instance.client.auth.signOut();
+                    if (mounted) context.go('/login');
+                  },
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: const Text('Logout'),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
@@ -289,7 +327,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   children: [
                     CircleAvatar(
                       radius: 50,
-                      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      backgroundColor: theme.colorScheme.primary.withValues(
+                        alpha: 0.1,
+                      ),
                       backgroundImage: _photoPath != null
                           ? FileImage(File(_photoPath!))
                           : null,
@@ -307,7 +347,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       child: CircleAvatar(
                         radius: 18,
                         backgroundColor: theme.colorScheme.primary,
-                        child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          size: 18,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -361,7 +405,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    backgroundColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.1,
+                    ),
                     backgroundImage: _petPhotoPath != null
                         ? FileImage(File(_petPhotoPath!))
                         : null,
@@ -379,7 +425,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     child: CircleAvatar(
                       radius: 18,
                       backgroundColor: theme.colorScheme.primary,
-                      child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        size: 18,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -395,41 +445,38 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 16),
-            Text(
-              'Species',
-              style: theme.textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: _species.map((species) {
-                final isSelected = _selectedSpecies == species;
-                return ChoiceChip(
-                  label: Text(species),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() => _selectedSpecies = species);
-                    }
-                  },
-                );
-              }).toList(),
-            ),
-            if (_selectedSpecies == 'Other') ...[
-              const SizedBox(height: 16),
-              TextFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Specify Species',
-                  prefixIcon: Icon(Icons.pets),
-                  hintText: 'e.g., Hamster, Guinea Pig, etc.',
-                ),
-                onChanged: (value) {
-                  if (value.isNotEmpty) {
-                    setState(() => _selectedSpecies = value);
+          Text('Species', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: _species.map((species) {
+              final isSelected = _selectedSpecies == species;
+              return ChoiceChip(
+                label: Text(species),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (selected) {
+                    setState(() => _selectedSpecies = species);
                   }
                 },
+              );
+            }).toList(),
+          ),
+          if (_selectedSpecies == 'Other') ...[
+            const SizedBox(height: 16),
+            TextFormField(
+              decoration: const InputDecoration(
+                labelText: 'Specify Species',
+                prefixIcon: Icon(Icons.pets),
+                hintText: 'e.g., Hamster, Guinea Pig, etc.',
               ),
-            ],
+              onChanged: (value) {
+                if (value.isNotEmpty) {
+                  setState(() => _selectedSpecies = value);
+                }
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           TextFormField(
             controller: _breedController,
@@ -463,7 +510,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onTap: () async {
               final picked = await showDatePicker(
                 context: context,
-                initialDate: _dob ?? DateTime.now().subtract(const Duration(days: 365)),
+                initialDate:
+                    _dob ?? DateTime.now().subtract(const Duration(days: 365)),
                 firstDate: DateTime(2000),
                 lastDate: DateTime.now(),
               );
