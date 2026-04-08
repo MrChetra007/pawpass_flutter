@@ -22,6 +22,21 @@ void initGoogleSignIn() {
   }
 }
 
+String _getRedirectUri() {
+  if (kIsWeb) {
+    final webRedirectUrl = dotenv.env['WEB_REDIRECT_URL'];
+    if (webRedirectUrl != null && webRedirectUrl.isNotEmpty) {
+      return webRedirectUrl;
+    }
+    final siteUrl = dotenv.env['SUPABASE_SITE_URL'];
+    if (siteUrl != null && siteUrl.isNotEmpty) {
+      return '$siteUrl/auth/callback';
+    }
+    return 'https://paqtsmcmbepvlvqnutet.supabase.co/auth/callback';
+  }
+  return 'pawpass://login-callback';
+}
+
 final googleSignInProvider = Provider<GoogleSignIn>((ref) {
   return GoogleSignIn.instance;
 });
@@ -54,7 +69,7 @@ class AuthRepository {
   Future<bool> signInWithGoogle() async {
     await _supabase.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: 'pawpass://login-callback',
+      redirectTo: _getRedirectUri(),
     );
     return true;
   }
