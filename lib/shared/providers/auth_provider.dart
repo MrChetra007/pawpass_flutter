@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void initGoogleSignIn() {
@@ -104,15 +106,34 @@ class AuthRepository {
 
   Future<void> deleteAccount() async {
     final user = _supabase.auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      debugPrint('No user logged in');
+      return;
+    }
 
-    final session = _supabase.auth.currentSession;
-    if (session == null) return;
+    debugPrint('User ID: ${user.id}');
+    debugPrint('Calling delete-user edge function...');
 
-    await _supabase.functions.invoke(
-      'delete-user',
-      headers: {'Authorization': 'Bearer ${session.accessToken}'},
-    );
+    try {
+      final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+      final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+
+      final response = await http.post(
+        Uri.parse('$supabaseUrl/functions/v1/delete-user'),
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+          'Authorization': 'Bearer $supabaseAnonKey',
+        },
+        body: jsonEncode({'userId': user.id}),
+      );
+
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
+    } catch (e, stackTrace) {
+      debugPrint('Edge function exception: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
 
     await _googleSignIn.signOut();
     await _supabase.auth.signOut();
