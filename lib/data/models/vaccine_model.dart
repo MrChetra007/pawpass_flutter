@@ -40,7 +40,9 @@ class Vaccine {
       userId: json['user_id'] as String,
       name: json['name'] as String,
       dateGiven: DateTime.parse(json['date_given'] as String),
-      nextDueDate: json['next_due_date'] != null ? DateTime.parse(json['next_due_date'] as String) : null,
+      nextDueDate: json['next_due_date'] != null
+          ? DateTime.parse(json['next_due_date'] as String)
+          : null,
       vetName: json['vet_name'] as String?,
       clinicName: json['clinic_name'] as String?,
       batchNumber: json['batch_number'] as String?,
@@ -48,7 +50,9 @@ class Vaccine {
       notes: json['notes'] as String?,
       isActive: json['is_active'] as bool? ?? true,
       createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
     );
   }
 
@@ -58,7 +62,8 @@ class Vaccine {
       'user_id': userId,
       'name': name,
       'date_given': dateGiven.toIso8601String().split('T').first,
-      if (nextDueDate != null) 'next_due_date': nextDueDate!.toIso8601String().split('T').first,
+      if (nextDueDate != null)
+        'next_due_date': nextDueDate!.toIso8601String().split('T').first,
       if (vetName != null) 'vet_name': vetName,
       if (clinicName != null) 'clinic_name': clinicName,
       if (batchNumber != null) 'batch_number': batchNumber,
@@ -71,17 +76,28 @@ class Vaccine {
   VaccineStatus get status {
     if (nextDueDate == null) return VaccineStatus.unknown;
     final now = DateTime.now();
-    if (nextDueDate!.isBefore(now)) return VaccineStatus.overdue;
-    if (nextDueDate!.difference(now).inDays <= 30) return VaccineStatus.dueSoon;
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDate = DateTime(
+      nextDueDate!.year,
+      nextDueDate!.month,
+      nextDueDate!.day,
+    );
+
+    if (dueDate.isBefore(today)) return VaccineStatus.overdue;
+    if (dueDate.difference(today).inDays <= 30) return VaccineStatus.dueSoon;
     return VaccineStatus.upToDate;
   }
 
   String get statusLabel {
     switch (status) {
-      case VaccineStatus.upToDate: return 'Up to date';
-      case VaccineStatus.dueSoon: return 'Due soon';
-      case VaccineStatus.overdue: return 'Overdue';
-      case VaccineStatus.unknown: return 'Unknown';
+      case VaccineStatus.upToDate:
+        return 'Up to date';
+      case VaccineStatus.dueSoon:
+        return 'Due soon';
+      case VaccineStatus.overdue:
+        return 'Overdue';
+      case VaccineStatus.unknown:
+        return 'Unknown';
     }
   }
 }
