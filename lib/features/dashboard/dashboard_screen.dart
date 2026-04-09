@@ -5,6 +5,7 @@ import '../../core/theme/app_theme_data.dart';
 import '../../core/utils/date_utils.dart';
 import '../../core/utils/feature_gate.dart';
 import '../../data/models/vaccine_model.dart';
+import '../../data/models/medication_model.dart';
 import '../../shared/providers/pet_provider.dart';
 import '../../shared/providers/vaccine_provider.dart';
 import '../../shared/providers/appointment_provider.dart';
@@ -120,7 +121,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                 userAsync.when(
                                   data: (user) => CircleAvatar(
                                     radius: 24,
-                                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                    backgroundColor: theme.colorScheme.primary
+                                        .withValues(alpha: 0.1),
                                     backgroundImage: user?.avatarUrl != null
                                         ? NetworkImage(user!.avatarUrl!)
                                         : null,
@@ -133,23 +135,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                   ),
                                   loading: () => CircleAvatar(
                                     radius: 24,
-                                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                    backgroundColor: theme.colorScheme.primary
+                                        .withValues(alpha: 0.1),
                                   ),
                                   error: (_, __) => CircleAvatar(
                                     radius: 24,
-                                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                    backgroundColor: theme.colorScheme.primary
+                                        .withValues(alpha: 0.1),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Welcome back,',
-                                        style: theme.textTheme.labelLarge?.copyWith(
-                                          color: theme.colorScheme.primary,
-                                        ),
+                                        style: theme.textTheme.labelLarge
+                                            ?.copyWith(
+                                              color: theme.colorScheme.primary,
+                                            ),
                                       ),
                                       const SizedBox(height: 2),
                                       userAsync.when(
@@ -194,10 +200,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     animation: _fadeAnimations[1],
                     child: Column(
                       children: [
-                        _buildSectionHeader(
-                          context,
-                          'Upcoming',
-                        ),
+                        _buildSectionHeader(context, 'Upcoming'),
                         const SizedBox(height: 12),
                         _buildAppointmentsSection(context),
                       ],
@@ -634,79 +637,79 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (date != null) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: theme.textTheme.labelMedium?.color,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        AppDateUtils.formatShortDate(date),
-                        style: theme.textTheme.labelMedium,
-                      ),
-                    ],
-                  ),
+                  if (date != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          AppDateUtils.formatShortDate(date),
+                          style: theme.textTheme.labelMedium,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Upcoming',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Upcoming',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -771,9 +774,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -791,12 +799,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               ],
             ),
             const SizedBox(height: 24),
-            _buildDetailRow(
-              theme,
-              Icons.pets,
-              'Pet',
-              petName,
-            ),
+            _buildDetailRow(theme, Icons.pets, 'Pet', petName),
             _buildDetailRow(
               theme,
               Icons.calendar_today,
@@ -810,27 +813,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               _formatTime(appointment.datetime),
             ),
             if (appointment.vetName != null && appointment.vetName!.isNotEmpty)
-              _buildDetailRow(
-                theme,
-                Icons.person,
-                'Vet',
-                appointment.vetName!,
-              ),
-            if (appointment.clinicName != null && appointment.clinicName!.isNotEmpty)
+              _buildDetailRow(theme, Icons.person, 'Vet', appointment.vetName!),
+            if (appointment.clinicName != null &&
+                appointment.clinicName!.isNotEmpty)
               _buildDetailRow(
                 theme,
                 Icons.local_hospital,
                 'Clinic',
                 appointment.clinicName!,
               ),
-            if (appointment.clinicPhone != null && appointment.clinicPhone!.isNotEmpty)
+            if (appointment.clinicPhone != null &&
+                appointment.clinicPhone!.isNotEmpty)
               _buildDetailRow(
                 theme,
                 Icons.phone,
                 'Phone',
                 appointment.clinicPhone!,
               ),
-            if (appointment.clinicAddress != null && appointment.clinicAddress!.isNotEmpty)
+            if (appointment.clinicAddress != null &&
+                appointment.clinicAddress!.isNotEmpty)
               _buildDetailRow(
                 theme,
                 Icons.location_on,
@@ -871,7 +872,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         'Are you sure you want to cancel this appointment?',
                       );
                       if (confirm == true) {
-                        await ref.read(appointmentNotifierProvider.notifier)
+                        await ref
+                            .read(appointmentNotifierProvider.notifier)
                             .cancelAppointment(appointment.id);
                         if (context.mounted) Navigator.pop(context);
                       }
@@ -889,7 +891,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      await ref.read(appointmentNotifierProvider.notifier)
+                      await ref
+                          .read(appointmentNotifierProvider.notifier)
                           .markAsCompleted(appointment.id);
                       if (context.mounted) Navigator.pop(context);
                     },
@@ -1375,7 +1378,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  Widget _buildMedicationsContent(BuildContext context, List medications) {
+  Widget _buildMedicationsContent(
+    BuildContext context,
+    List<Medication> medications,
+  ) {
     final theme = Theme.of(context);
     final displayMeds = medications.take(3).toList();
 
@@ -1447,7 +1453,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  void _showMedicationsBottomSheet(BuildContext context, List medications) {
+  void _showMedicationsBottomSheet(
+    BuildContext context,
+    List<Medication> medications,
+  ) {
     final theme = Theme.of(context);
 
     showModalBottomSheet(
@@ -1529,7 +1538,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  Widget _buildMedicationCard(BuildContext context, dynamic med, ThemeData theme) {
+  Widget _buildMedicationCard(
+    BuildContext context,
+    Medication med,
+    ThemeData theme,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1560,7 +1573,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: med.isActive
                       ? theme.colorScheme.primary.withValues(alpha: 0.1)
@@ -1609,6 +1625,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               'Prescribed by',
               med.prescribedBy!,
             ),
+          if (med.endDate != null)
+            _buildMedInfoRow(
+              theme,
+              Icons.event_busy,
+              'Ends',
+              AppDateUtils.formatShortDate(med.endDate!),
+            ),
+          if (med.mealTiming != null && med.mealTiming!.isNotEmpty)
+            _buildMedInfoRow(
+              theme,
+              Icons.restaurant,
+              'Meal timing',
+              med.mealTimingLabel,
+            ),
+          if (med.timeOfDay.isNotEmpty)
+            _buildMedInfoRow(
+              theme,
+              Icons.access_time,
+              'Time of day',
+              med.timeOfDayLabel,
+            ),
           if (med.notes != null && med.notes!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Container(
@@ -1629,10 +1666,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    med.notes!,
-                    style: theme.textTheme.bodySmall,
-                  ),
+                  Text(med.notes!, style: theme.textTheme.bodySmall),
                 ],
               ),
             ),
@@ -1652,11 +1686,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: theme.colorScheme.primary,
-          ),
+          Icon(icon, size: 16, color: theme.colorScheme.primary),
           const SizedBox(width: 8),
           Text(
             '$label: ',
