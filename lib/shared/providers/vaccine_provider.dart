@@ -11,14 +11,18 @@ final vaccineRepositoryProvider = Provider<VaccineRepository>((ref) {
   return VaccineRepository(Supabase.instance.client);
 });
 
-final vaccinesProvider = FutureProvider.family<List<Vaccine>, String?>((ref, petId) async {
+final vaccinesProvider = FutureProvider.family<List<Vaccine>, String?>((
+  ref,
+  petId,
+) async {
   final repository = ref.watch(vaccineRepositoryProvider);
   return repository.getVaccines(petId: petId);
 });
 
-final vaccineNotifierProvider = NotifierProvider<VaccineNotifier, AsyncValue<List<Vaccine>>>(() {
-  return VaccineNotifier();
-});
+final vaccineNotifierProvider =
+    NotifierProvider<VaccineNotifier, AsyncValue<List<Vaccine>>>(() {
+      return VaccineNotifier();
+    });
 
 class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
   @override
@@ -65,7 +69,7 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
       final currentVaccines = state.value ?? [];
       state = AsyncValue.data([vaccine, ...currentVaccines]);
 
-      _scheduleNotification(vaccine);
+      await _scheduleNotification(vaccine);
 
       return vaccine;
     } catch (e) {
@@ -90,7 +94,7 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
   Future<void> deleteVaccine(String id) async {
     try {
       NotificationService().cancelVaccineReminder(id);
-      
+
       final repository = ref.read(vaccineRepositoryProvider);
       await repository.deleteVaccine(id);
 
@@ -108,7 +112,7 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
       if (!isActive) {
         NotificationService().cancelVaccineReminder(id);
       }
-      
+
       final repository = ref.read(vaccineRepositoryProvider);
       final updatedVaccine = await repository.toggleActive(id, isActive);
 
@@ -124,18 +128,24 @@ class VaccineNotifier extends Notifier<AsyncValue<List<Vaccine>>> {
   Map<String, int> getStatusCounts() {
     final vaccines = state.value ?? [];
     return {
-      'upToDate': vaccines.where((v) => v.status == VaccineStatus.upToDate).length,
-      'dueSoon': vaccines.where((v) => v.status == VaccineStatus.dueSoon).length,
-      'overdue': vaccines.where((v) => v.status == VaccineStatus.overdue).length,
+      'upToDate': vaccines
+          .where((v) => v.status == VaccineStatus.upToDate)
+          .length,
+      'dueSoon': vaccines
+          .where((v) => v.status == VaccineStatus.dueSoon)
+          .length,
+      'overdue': vaccines
+          .where((v) => v.status == VaccineStatus.overdue)
+          .length,
     };
   }
 
-  void _scheduleNotification(Vaccine vaccine) async {
+  Future<void> _scheduleNotification(Vaccine vaccine) async {
     if (vaccine.nextDueDate == null) return;
-    
+
     final petsAsync = ref.read(petNotifierProvider);
     String petName = 'Your pet';
-    
+
     petsAsync.whenData((pets) {
       final pet = pets.where((p) => p.id == vaccine.petId).firstOrNull;
       if (pet != null) petName = pet.name;

@@ -14,14 +14,17 @@ final appointmentsProvider = FutureProvider<List<Appointment>>((ref) async {
   return repository.getAppointments();
 });
 
-final upcomingAppointmentsProvider = FutureProvider<List<Appointment>>((ref) async {
+final upcomingAppointmentsProvider = FutureProvider<List<Appointment>>((
+  ref,
+) async {
   final repository = ref.watch(appointmentRepositoryProvider);
   return repository.getUpcomingAppointments();
 });
 
-final appointmentNotifierProvider = NotifierProvider<AppointmentNotifier, AsyncValue<List<Appointment>>>(() {
-  return AppointmentNotifier();
-});
+final appointmentNotifierProvider =
+    NotifierProvider<AppointmentNotifier, AsyncValue<List<Appointment>>>(() {
+      return AppointmentNotifier();
+    });
 
 class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
   @override
@@ -33,7 +36,10 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
     state = const AsyncValue.loading();
     try {
       final repository = ref.read(appointmentRepositoryProvider);
-      final appointments = await repository.getAppointments(petId: petId, status: status);
+      final appointments = await repository.getAppointments(
+        petId: petId,
+        status: status,
+      );
       state = AsyncValue.data(appointments);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -68,7 +74,7 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
       final currentAppointments = state.value ?? [];
       state = AsyncValue.data([...currentAppointments, appointment]);
 
-      _scheduleNotification(appointment);
+      await _scheduleNotification(appointment);
 
       return appointment;
     } catch (e) {
@@ -83,7 +89,9 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
 
       final currentAppointments = state.value ?? [];
       state = AsyncValue.data(
-        currentAppointments.map((a) => a.id == id ? updatedAppointment : a).toList(),
+        currentAppointments
+            .map((a) => a.id == id ? updatedAppointment : a)
+            .toList(),
       );
     } catch (e) {
       rethrow;
@@ -93,7 +101,7 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
   Future<void> deleteAppointment(String id) async {
     try {
       NotificationService().cancelAppointmentReminder(id);
-      
+
       final repository = ref.read(appointmentRepositoryProvider);
       await repository.deleteAppointment(id);
 
@@ -109,7 +117,7 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
   Future<void> markAsCompleted(String id) async {
     try {
       NotificationService().cancelAppointmentReminder(id);
-      
+
       final repository = ref.read(appointmentRepositoryProvider);
       await repository.markAsCompleted(id);
 
@@ -146,7 +154,7 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
   Future<void> cancelAppointment(String id) async {
     try {
       NotificationService().cancelAppointmentReminder(id);
-      
+
       final repository = ref.read(appointmentRepositoryProvider);
       await repository.cancelAppointment(id);
 
@@ -180,10 +188,10 @@ class AppointmentNotifier extends Notifier<AsyncValue<List<Appointment>>> {
     }
   }
 
-  void _scheduleNotification(Appointment appointment) async {
+  Future<void> _scheduleNotification(Appointment appointment) async {
     final petsAsync = ref.read(petNotifierProvider);
     String petName = 'Your pet';
-    
+
     petsAsync.whenData((pets) {
       final pet = pets.where((p) => p.id == appointment.petId).firstOrNull;
       if (pet != null) petName = pet.name;
