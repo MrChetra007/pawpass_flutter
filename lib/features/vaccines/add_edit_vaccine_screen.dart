@@ -115,7 +115,9 @@ class _AddEditVaccineScreenState extends ConsumerState<AddEditVaccineScreen> {
           .from('vet-documents')
           .upload(fileName, _selectedFile!);
 
-      final url = supabase.storage.from('vet-documents').getPublicUrl(fileName);
+      final url = await supabase.storage
+          .from('vet-documents')
+          .createSignedUrl(fileName, 31536000);
 
       setState(() => _isUploading = false);
       return url;
