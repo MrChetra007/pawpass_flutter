@@ -55,7 +55,7 @@ create table public.users (
 
   -- Subscription — updated by Supabase Edge Function after IAP validation
   plan                text not null default 'free'
-                        check (plan in ('free', 'pro', 'family')),
+                        check (plan in ('free', 'pro', 'premium')),
   plan_expires_at     timestamptz,
 
   -- IAP: latest server-verified receipt token per platform
@@ -303,9 +303,9 @@ create table public.family_members (
   member_email text not null,
   member_name  text,
   role         text not null default 'viewer'
-                 check (role in ('viewer','admin')),
+                  check (role in ('viewer','admin')),
   status       text not null default 'pending'
-                 check (status in ('pending','active','removed')),
+                  check (status in ('pending','active','removed')),
   invited_at   timestamptz not null default now(),
   accepted_at  timestamptz
 );
@@ -319,7 +319,7 @@ create index family_members_email_idx    on public.family_members(member_email);
 
 
 -- ============================================================
--- 10. UPDATED_AT TRIGGER
+-- 11. UPDATED_AT TRIGGER
 -- ============================================================
 
 create or replace function public.set_updated_at()
@@ -350,7 +350,38 @@ create trigger set_updated_at before update on public.medications
 
 
 -- ============================================================
--- 11. STORAGE BUCKETS
+-- 12. STORAGE BUCKETS
+-- ============================================================
+
+create or replace function public.set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger set_updated_at before update on public.users
+  for each row execute procedure public.set_updated_at();
+
+create trigger set_updated_at before update on public.pets
+  for each row execute procedure public.set_updated_at();
+
+create trigger set_updated_at before update on public.vet_records
+  for each row execute procedure public.set_updated_at();
+
+create trigger set_updated_at before update on public.vaccines
+  for each row execute procedure public.set_updated_at();
+
+create trigger set_updated_at before update on public.appointments
+  for each row execute procedure public.set_updated_at();
+
+create trigger set_updated_at before update on public.medications
+  for each row execute procedure public.set_updated_at();
+
+
+-- ============================================================
+-- 10. STORAGE BUCKETS
 -- ============================================================
 
 insert into storage.buckets (id, name, public)

@@ -21,15 +21,18 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
       faqs: [
         _FaqItem(
           question: 'How do I add my first pet?',
-          answer: 'Go to the Pets tab and tap the + button. Fill in your pet\'s details like name, species, breed, and date of birth. You can also add a photo from your gallery or camera.',
+          answer:
+              'Go to the Pets tab and tap the + button. Fill in your pet\'s details like name, species, breed, and date of birth. You can also add a photo from your gallery or camera.',
         ),
         _FaqItem(
           question: 'Can I use PawPass for multiple pets?',
-          answer: 'Yes! Free users can add 1 pet. Paw Plan users can add up to 3 pets, and Family Plan users can add unlimited pets.',
+          answer:
+              'Yes! Free users can add 1 pet. Pro Plan users can add up to 3 pets, and Premium Plan users can add up to 10 pets.',
         ),
         _FaqItem(
           question: 'How do I switch between my pets?',
-          answer: 'Tap on your pet\'s name or avatar at the top of the Dashboard to open the pet switcher and select a different pet.',
+          answer:
+              'Tap on your pet\'s name or avatar at the top of the Dashboard to open the pet switcher and select a different pet.',
         ),
       ],
     ),
@@ -39,15 +42,18 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
       faqs: [
         _FaqItem(
           question: 'What types of health records can I store?',
-          answer: 'You can store checkups, surgeries, illnesses, injuries, dental records, grooming sessions, lab results, and other medical records.',
+          answer:
+              'You can store checkups, surgeries, illnesses, injuries, dental records, grooming sessions, lab results, and other medical records.',
         ),
         _FaqItem(
           question: 'How do I upload documents?',
-          answer: 'When adding or editing a record, tap on the document attachment area to pick a file from your device. Document uploads are available for Paw Plan and Family Plan users.',
+          answer:
+              'When adding or editing a record, tap on the document attachment area to pick a file from your device. Document uploads are available for Pro and Premium Plan users.',
         ),
         _FaqItem(
           question: 'Can I track vaccination due dates?',
-          answer: 'Yes! Add vaccines with their due dates and PawPass will show status badges: green for up-to-date, yellow for due soon (within 30 days), and red for overdue.',
+          answer:
+              'Yes! Add vaccines with their due dates and PawPass will show status badges: green for up-to-date, yellow for due soon (within 30 days), and red for overdue.',
         ),
       ],
     ),
@@ -57,15 +63,18 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
       faqs: [
         _FaqItem(
           question: 'How do I schedule an appointment?',
-          answer: 'Go to the Appointments tab and tap the + button. Fill in the details including date, time, vet name, and clinic information.',
+          answer:
+              'Go to the Appointments tab and tap the + button. Fill in the details including date, time, vet name, and clinic information.',
         ),
         _FaqItem(
           question: 'Will I get reminders for appointments?',
-          answer: 'Paw Plan and Family Plan users receive push notifications 24 hours before an appointment. Appointment reminders are available in the Pro and Family plans only.',
+          answer:
+              'Pro and Premium Plan users receive push notifications 24 hours before an appointment. Appointment reminders are available in the Pro and Premium plans only.',
         ),
         _FaqItem(
           question: 'How do I mark an appointment as completed?',
-          answer: 'Swipe right on an appointment card to mark it as completed, or swipe left to cancel.',
+          answer:
+              'Swipe right on an appointment card to mark it as completed, or swipe left to cancel.',
         ),
       ],
     ),
@@ -75,15 +84,18 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
       faqs: [
         _FaqItem(
           question: 'How do I log a medication?',
-          answer: 'Go to the Medications section and tap + to add a new medication. Include the name, dosage, frequency, and start date.',
+          answer:
+              'Go to the Medications section and tap + to add a new medication. Include the name, dosage, frequency, and start date.',
         ),
         _FaqItem(
           question: 'What do the frequency options mean?',
-          answer: 'Frequency options include: Daily, Weekly, Monthly, As Needed, or Custom. Choose the option that best matches how often your pet needs the medication.',
+          answer:
+              'Frequency options include: Daily, Weekly, Monthly, As Needed, or Custom. Choose the option that best matches how often your pet needs the medication.',
         ),
         _FaqItem(
           question: 'How do I stop tracking a medication?',
-          answer: 'Open the medication and toggle the "Active" switch. Inactive medications are moved to the bottom of the list for reference.',
+          answer:
+              'Open the medication and toggle the "Active" switch. Inactive medications are moved to the bottom of the list for reference.',
         ),
       ],
     ),
@@ -93,19 +105,23 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
       faqs: [
         _FaqItem(
           question: 'What\'s included in the Free plan?',
-          answer: 'Free users can add 1 pet, store up to 5 health records, and track vaccines. Document uploads and appointment reminders require a paid plan.',
+          answer:
+              'Free users can add 1 pet, store up to 5 health records, and track vaccines. Document uploads and appointment reminders require a paid plan.',
         ),
         _FaqItem(
           question: 'How do I upgrade my plan?',
-          answer: 'Go to Profile > Your Plan, or tap on any feature that\'s locked. Select your preferred plan and complete the purchase through your app store.',
+          answer:
+              'Go to Profile > Your Plan, or tap on any feature that\'s locked. Select your preferred plan and complete the purchase through your app store.',
         ),
         _FaqItem(
           question: 'How do I cancel my subscription?',
-          answer: 'You can cancel anytime through your app store settings (iOS: Settings > App Store > Subscriptions, Android: Play Store > Subscriptions).',
+          answer:
+              'You can cancel anytime through your app store settings (iOS: Settings > App Store > Subscriptions, Android: Play Store > Subscriptions).',
         ),
         _FaqItem(
           question: 'Can I restore my purchases?',
-          answer: 'Yes! If you reinstall the app or get a new device, go to Profile > Restore Purchases to restore your subscription.',
+          answer:
+              'Yes! If you reinstall the app or get a new device, go to Profile > Restore Purchases to restore your subscription.',
         ),
       ],
     ),
@@ -115,15 +131,18 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
       faqs: [
         _FaqItem(
           question: 'How do I change the app theme?',
-          answer: 'Go to Profile > App Theme. Choose from 6 themes: Forest, Ocean, Blossom, Amber, Midnight, and Lavender. Your selection syncs across devices.',
+          answer:
+              'Go to Profile > App Theme. Choose from 6 themes: Forest, Ocean, Blossom, Amber, Midnight, and Lavender. Your selection syncs across devices.',
         ),
         _FaqItem(
           question: 'Can I change weight units from kg to lbs?',
-          answer: 'Yes! Go to Profile > Weight Units to toggle between kilograms (kg) and pounds (lbs).',
+          answer:
+              'Yes! Go to Profile > Weight Units to toggle between kilograms (kg) and pounds (lbs).',
         ),
         _FaqItem(
           question: 'How do I enable push notifications?',
-          answer: 'Go to Profile > Notifications. You can also configure notification settings directly from your device settings.',
+          answer:
+              'Go to Profile > Notifications. You can also configure notification settings directly from your device settings.',
         ),
       ],
     ),
@@ -133,15 +152,18 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
       faqs: [
         _FaqItem(
           question: 'How do I update my profile photo?',
-          answer: 'Tap on your avatar in the Profile tab. You can choose a photo from your gallery or take a new one with your camera.',
+          answer:
+              'Tap on your avatar in the Profile tab. You can choose a photo from your gallery or take a new one with your camera.',
         ),
         _FaqItem(
           question: 'How do I delete my account?',
-          answer: 'Go to Profile > Delete Account. This will permanently delete your account and all associated data. This action cannot be undone.',
+          answer:
+              'Go to Profile > Delete Account. This will permanently delete your account and all associated data. This action cannot be undone.',
         ),
         _FaqItem(
           question: 'Is my data private?',
-          answer: 'Yes. All your data is private and protected. Only you can see your pets\' health records. We never share your personal information with third parties.',
+          answer:
+              'Yes. All your data is private and protected. Only you can see your pets\' health records. We never share your personal information with third parties.',
         ),
       ],
     ),
@@ -262,7 +284,9 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            ..._categories.map((category) => _buildCategory(context, category, theme)),
+            ..._categories.map(
+              (category) => _buildCategory(context, category, theme),
+            ),
             const SizedBox(height: 24),
             Container(
               width: double.infinity,
@@ -302,7 +326,10 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.primary,
                       side: BorderSide(color: theme.colorScheme.primary),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -318,7 +345,11 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
     );
   }
 
-  Widget _buildCategory(BuildContext context, _FaqCategory category, ThemeData theme) {
+  Widget _buildCategory(
+    BuildContext context,
+    _FaqCategory category,
+    ThemeData theme,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -428,7 +459,9 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
               ),
             ),
           ),
-          crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          crossFadeState: isExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
           duration: const Duration(milliseconds: 200),
         ),
         if (!isLast)
@@ -469,9 +502,9 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
             const SizedBox(height: 16),
             Text(
               'Contact Support',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(

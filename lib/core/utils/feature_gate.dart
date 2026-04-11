@@ -13,7 +13,7 @@ class FeatureGate {
     bool showModal = true,
   }) async {
     final userAsync = ref.read(userProvider);
-    
+
     final canAccess = userAsync.maybeWhen(
       data: (user) => _canAccessFeature(user?.plan ?? 'free', feature),
       orElse: () => false,
@@ -31,8 +31,8 @@ class FeatureGate {
   }
 
   static bool _canAccessFeature(String plan, String feature) {
-    final isPro = plan == 'pro' || plan == 'family';
-    final isFamily = plan == 'family';
+    final isPro = plan == 'pro' || plan == 'premium';
+    final isPremium = plan == 'premium';
 
     switch (feature) {
       case 'appointments':
@@ -48,11 +48,11 @@ class FeatureGate {
       case 'push_notifications':
         return isPro;
       case 'pdf_export':
-        return isFamily;
+        return isPremium;
       case 'multiple_pets':
         return isPro;
       case 'unlimited_pets':
-        return isFamily;
+        return isPremium;
       default:
         return true;
     }
@@ -84,8 +84,8 @@ class PlanUtils {
   }
 
   static bool _canAccessFeature(String plan, String feature) {
-    final isPro = plan == 'pro' || plan == 'family';
-    final isFamily = plan == 'family';
+    final isPro = plan == 'pro' || plan == 'premium';
+    final isPremium = plan == 'premium';
 
     switch (feature) {
       case 'appointments':
@@ -101,30 +101,30 @@ class PlanUtils {
       case 'push_notifications':
         return isPro;
       case 'pdf_export':
-        return isFamily;
+        return isPremium;
       case 'multiple_pets':
         return isPro;
       case 'unlimited_pets':
-        return isFamily;
+        return isPremium;
       default:
         return true;
     }
   }
 
   static bool isPaidPlan(String? plan) {
-    return plan == 'pro' || plan == 'family';
+    return plan == 'pro' || plan == 'premium';
   }
 
-  static bool isFamilyPlan(String? plan) {
-    return plan == 'family';
+  static bool isPremiumPlan(String? plan) {
+    return plan == 'premium';
   }
 
   static String getPlanName(String? plan) {
     switch (plan) {
       case 'pro':
-        return 'Paw Plan';
-      case 'family':
-        return 'Family Plan';
+        return 'Pro Plan';
+      case 'premium':
+        return 'Premium Plan';
       default:
         return 'Free';
     }

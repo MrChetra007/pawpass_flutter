@@ -16,6 +16,7 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
   bool _notificationsEnabled = true;
   List<PendingNotificationRequest> _pendingNotifications = [];
   bool _loadingPending = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -95,11 +96,13 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(title: const Text('Notifications')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
             SwitchListTile(
               title: const Text('Enable Notifications'),
@@ -145,6 +148,37 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
                 '• Cancel All: Removes all scheduled notifications',
                 style: theme.textTheme.bodyMedium,
               ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => _testImmediate(context),
+                    icon: const Icon(Icons.notifications_active),
+                    label: const Text('Immediate'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => _test10s(context),
+                    icon: const Icon(Icons.timer),
+                    label: const Text('10 sec'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => _test1m(context),
+                    icon: const Icon(Icons.timer),
+                    label: const Text('1 min'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => _cancelNotifications(context),
+                icon: const Icon(Icons.cancel),
+                label: const Text('Cancel All'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.error,
+                  foregroundColor: theme.colorScheme.onError,
+                ),
+              ),
               const SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -183,25 +217,27 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
                   ),
                 )
               else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _pendingNotifications.length,
-                  itemBuilder: (context, index) {
-                    final pending = _pendingNotifications[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: const Icon(Icons.notifications_active),
-                        title: Text(pending.title ?? 'No title'),
-                        subtitle: Text(pending.body ?? 'No body'),
-                        trailing: Text(
-                          'ID: ${pending.id}',
-                          style: theme.textTheme.bodySmall,
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _pendingNotifications.length,
+                    itemBuilder: (context, index) {
+                      final pending = _pendingNotifications[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: const Icon(Icons.notifications_active),
+                          title: Text(pending.title ?? 'No title'),
+                          subtitle: Text(pending.body ?? 'No body'),
+                          trailing: Text(
+                            'ID: ${pending.id}',
+                            style: theme.textTheme.bodySmall,
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
@@ -219,7 +255,7 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
     );
   }
 
-  Future<void> _showImmediateNotification(BuildContext context) async {
+  void _testImmediate(BuildContext ctx) async {
     final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
     await flutterLocalNotificationsPlugin.show(
@@ -242,14 +278,14 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
       ),
     );
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+    if (mounted) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
         const SnackBar(content: Text('Immediate notification fired!')),
       );
     }
   }
 
-  Future<void> _showScheduled10s(BuildContext context) async {
+  void _test10s(BuildContext ctx) async {
     final notificationTime = DateTime.now().add(const Duration(seconds: 10));
 
     await NotificationService().notifications.zonedSchedule(
@@ -274,14 +310,14 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+    if (mounted) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
         const SnackBar(content: Text('Notification scheduled for 10 seconds!')),
       );
     }
   }
 
-  Future<void> _showScheduled1m(BuildContext context) async {
+  void _test1m(BuildContext ctx) async {
     final notificationTime = DateTime.now().add(const Duration(minutes: 1));
 
     await NotificationService().notifications.zonedSchedule(
@@ -306,18 +342,17 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+    if (mounted) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
         const SnackBar(content: Text('Notification scheduled for 1 minute!')),
       );
     }
   }
 
-  Future<void> _cancelAll(BuildContext context) async {
+  void _cancelNotifications(BuildContext ctx) async {
     await NotificationService().cancelAllNotifications();
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+    if (mounted) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
         const SnackBar(content: Text('All notifications cancelled!')),
       );
     }

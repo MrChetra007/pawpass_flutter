@@ -95,7 +95,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
                   opacity: _fadeAnimation,
                   child: _buildPlanCard(
                     context,
-                    title: 'Paw Plan',
+                    title: 'Pro Plan',
                     price: '\$4.99',
                     period: '/month',
                     description: 'Perfect for single pet owners',
@@ -116,19 +116,19 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
                   opacity: _fadeAnimation,
                   child: _buildPlanCard(
                     context,
-                    title: 'Family Plan',
+                    title: 'Premium Plan',
                     price: '\$9.99',
                     period: '/month',
                     description: 'Best value for multiple pets',
                     isPopular: true,
                     features: const [
                       'Unlimited pets',
-                      'Everything in Paw Plan',
+                      'Everything in Pro Plan',
                       'PDF passport export',
                       'Priority support',
                     ],
                     notIncluded: const [],
-                    onTap: () => _showUpgradeDialog('family'),
+                    onTap: () => _showUpgradeDialog('premium'),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -158,12 +158,12 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
 
     switch (plan) {
       case 'pro':
-        planName = 'Paw Plan';
+        planName = 'Pro Plan';
         bgColor = theme.colorScheme.primary;
         textColor = Colors.white;
         break;
-      case 'family':
-        planName = 'Family Plan';
+      case 'premium':
+        planName = 'Premium Plan';
         bgColor = theme.colorScheme.primary;
         textColor = Colors.white;
         break;
@@ -681,7 +681,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
 
       if (user != null) {
         await supabase.from('users').update({'plan': plan}).eq('id', user.id);
-        
+
         await Future.delayed(const Duration(milliseconds: 100));
         ref.invalidate(userProvider);
         ref.invalidate(subscriptionProvider);

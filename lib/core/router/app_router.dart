@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/services/notification_service.dart';
+import '../../data/repositories/appointment_repository.dart';
+import '../../data/repositories/vaccine_repository.dart';
+import '../../data/repositories/medication_repository.dart';
+import '../../data/repositories/pet_repository.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/providers/theme_provider.dart';
 import '../../features/auth/landing_page.dart';
@@ -29,6 +34,72 @@ import '../../features/profile/help_faq_screen.dart';
 import '../../features/profile/privacy_policy_screen.dart';
 import '../../features/profile/terms_of_service_screen.dart';
 import '../../features/billing/billing_screen.dart';
+
+Future<void> _rescheduleAllReminders(SupabaseClient supabase) async {
+  try {
+    final appointments = await AppointmentRepository(
+      supabase,
+    ).getUpcomingAppointments();
+    final vaccines = await VaccineRepository(supabase).getVaccines();
+    final medications = await MedicationRepository(
+      supabase,
+    ).getMedications(activeOnly: true);
+    final pets = await PetRepository(supabase).getPets();
+
+    final petMap = {for (final p in pets) p.id: p.name};
+
+    final aptData = appointments
+        .where((a) => a.datetime.isAfter(DateTime.now()))
+        .map(
+          (a) => {
+            'id': a.id,
+            'petName': petMap[a.petId] ?? 'Your pet',
+            'title': a.title,
+            'datetime': a.datetime,
+          },
+        )
+        .toList();
+
+    final vacData = vaccines
+        .where(
+          (v) =>
+              v.nextDueDate != null && v.nextDueDate!.isAfter(DateTime.now()),
+        )
+        .map(
+          (v) => {
+            'id': v.id,
+            'petName': petMap[v.petId] ?? 'Your pet',
+            'name': v.name,
+            'dueDate': v.nextDueDate,
+          },
+        )
+        .toList();
+
+    final medData = medications
+        .where((m) => m.timeOfDay.isNotEmpty)
+        .map(
+          (m) => {
+            'id': m.id,
+            'petName': petMap[m.petId] ?? 'Your pet',
+            'name': m.name,
+            'dosage': m.dosage,
+            'timeOfDay': m.timeOfDay,
+            'frequency': m.frequency,
+            'startDate': m.startDate,
+            'endDate': m.endDate,
+          },
+        )
+        .toList();
+
+    await NotificationService().scheduleAllReminders(
+      appointments: aptData,
+      vaccines: vacData,
+      medications: medData,
+    );
+  } catch (e) {
+    debugPrint('Failed to reschedule reminders: $e');
+  }
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -84,6 +155,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               isOnboarding == true) {
             return '/onboarding';
           }
+
+          _rescheduleAllReminders(supabase);
         }
         return '/home';
       }

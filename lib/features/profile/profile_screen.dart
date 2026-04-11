@@ -531,12 +531,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       case 'pro':
         bgColor = theme.colorScheme.primary;
         textColor = Colors.white;
-        label = 'Paw Plan';
+        label = 'Pro Plan';
         break;
-      case 'family':
+      case 'premium':
         bgColor = theme.colorScheme.primary;
         textColor = Colors.white;
-        label = 'Family Plan';
+        label = 'Premium Plan';
         break;
       default:
         bgColor = Colors.transparent;

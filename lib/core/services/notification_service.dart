@@ -159,6 +159,160 @@ class NotificationService {
     await notifications.cancel(id: _generateId('vac', vaccineId));
   }
 
+  Future<void> scheduleMedicationReminder({
+    required String medicationId,
+    required String petName,
+    required String medicationName,
+    required String? dosage,
+    required List<String> timeOfDay,
+    required String frequency,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    await cancelMedicationReminder(medicationId);
+
+    final now = DateTime.now();
+    final start = startDate ?? now;
+    DateTime? nextNotificationDate;
+
+    for (final timeSlot in timeOfDay) {
+      final time = _parseTimeOfDay(timeSlot);
+      if (time == null) continue;
+
+      DateTime scheduledDate = DateTime(
+        start.year,
+        start.month,
+        start.day,
+        time.hour,
+        time.minute,
+      );
+
+      if (scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+
+      if (endDate != null && scheduledDate.isAfter(endDate)) continue;
+
+      nextNotificationDate ??= scheduledDate;
+
+      await notifications.zonedSchedule(
+        id: _generateId('med_${timeSlot}', medicationId),
+        title: 'Medication Reminder',
+        body: _buildMedicationBody(petName, medicationName, dosage, timeSlot),
+        scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+        notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+            'medications',
+            'Medications',
+            channelDescription: 'Medication reminders',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: frequency == 'daily'
+            ? DateTimeComponents.time
+            : (frequency == 'weekly'
+                  ? DateTimeComponents.dayOfWeekAndTime
+                  : DateTimeComponents.time),
+        payload: 'medication:$medicationId',
+      );
+    }
+  }
+
+  String _buildMedicationBody(
+    String petName,
+    String medicationName,
+    String? dosage,
+    String timeSlot,
+  ) {
+    final timeLabel = _timeSlotLabel(timeSlot);
+    final dosageText = dosage != null ? ' ($dosage)' : '';
+    return '$petName - $medicationName$dosageText is due at $timeLabel';
+  }
+
+  String _timeSlotLabel(String timeSlot) {
+    switch (timeSlot) {
+      case 'morning':
+        return 'morning';
+      case 'afternoon':
+        return 'afternoon';
+      case 'evening':
+        return 'evening';
+      case 'night':
+        return 'night';
+      default:
+        return timeSlot;
+    }
+  }
+
+  ({int hour, int minute})? _parseTimeOfDay(String timeSlot) {
+    switch (timeSlot) {
+      case 'morning':
+        return (hour: 8, minute: 0);
+      case 'afternoon':
+        return (hour: 12, minute: 0);
+      case 'evening':
+        return (hour: 18, minute: 0);
+      case 'night':
+        return (hour: 21, minute: 0);
+      default:
+        return null;
+    }
+  }
+
+  Future<void> cancelMedicationReminder(String medicationId) async {
+    final prefixes = ['morning', 'afternoon', 'evening', 'night'];
+    for (final prefix in prefixes) {
+      await notifications.cancel(id: _generateId('med_$prefix', medicationId));
+    }
+  }
+
+  Future<void> scheduleAllReminders({
+    required List<Map<String, dynamic>> appointments,
+    required List<Map<String, dynamic>> vaccines,
+    required List<Map<String, dynamic>> medications,
+  }) async {
+    await notifications.cancelAll();
+
+    for (final apt in appointments) {
+      await scheduleAppointmentReminder(
+        appointmentId: apt['id'] as String,
+        petName: apt['petName'] as String,
+        title: apt['title'] as String,
+        appointmentDate: apt['datetime'] as DateTime,
+      );
+    }
+
+    for (final vac in vaccines) {
+      await scheduleVaccineReminder(
+        vaccineId: vac['id'] as String,
+        petName: vac['petName'] as String,
+        vaccineName: vac['name'] as String,
+        dueDate: vac['dueDate'] as DateTime,
+      );
+    }
+
+    for (final med in medications) {
+      await scheduleMedicationReminder(
+        medicationId: med['id'] as String,
+        petName: med['petName'] as String,
+        medicationName: med['name'] as String,
+        dosage: med['dosage'] as String?,
+        timeOfDay: (med['timeOfDay'] as List<String>).toList(),
+        frequency: med['frequency'] as String? ?? 'daily',
+        startDate: med['startDate'] as DateTime?,
+        endDate: med['endDate'] as DateTime?,
+      );
+    }
+  }
+
   Future<void> cancelAllNotifications() async {
     await notifications.cancelAll();
   }

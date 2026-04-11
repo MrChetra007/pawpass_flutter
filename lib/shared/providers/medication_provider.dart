@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/services/notification_service.dart';
 import '../../data/models/medication_model.dart';
 import '../../data/repositories/medication_repository.dart';
+import 'pet_provider.dart';
 
 export '../../data/repositories/medication_repository.dart';
 
@@ -19,9 +21,10 @@ final activeMedicationsProvider = FutureProvider<List<Medication>>((ref) async {
   return repository.getMedications(activeOnly: true);
 });
 
-final medicationNotifierProvider = NotifierProvider<MedicationNotifier, AsyncValue<List<Medication>>>(() {
-  return MedicationNotifier();
-});
+final medicationNotifierProvider =
+    NotifierProvider<MedicationNotifier, AsyncValue<List<Medication>>>(() {
+      return MedicationNotifier();
+    });
 
 class MedicationNotifier extends Notifier<AsyncValue<List<Medication>>> {
   @override
@@ -74,6 +77,8 @@ class MedicationNotifier extends Notifier<AsyncValue<List<Medication>>> {
       final currentMedications = state.value ?? [];
       state = AsyncValue.data([medication, ...currentMedications]);
 
+      await _scheduleNotification(medication);
+
       return medication;
     } catch (e) {
       rethrow;
@@ -87,7 +92,9 @@ class MedicationNotifier extends Notifier<AsyncValue<List<Medication>>> {
 
       final currentMedications = state.value ?? [];
       state = AsyncValue.data(
-        currentMedications.map((m) => m.id == id ? updatedMedication : m).toList(),
+        currentMedications
+            .map((m) => m.id == id ? updatedMedication : m)
+            .toList(),
       );
     } catch (e) {
       rethrow;
@@ -96,6 +103,8 @@ class MedicationNotifier extends Notifier<AsyncValue<List<Medication>>> {
 
   Future<void> deleteMedication(String id) async {
     try {
+      NotificationService().cancelMedicationReminder(id);
+
       final repository = ref.read(medicationRepositoryProvider);
       await repository.deleteMedication(id);
 
@@ -136,8 +145,40 @@ class MedicationNotifier extends Notifier<AsyncValue<List<Medication>>> {
           return m;
         }).toList(),
       );
+
+      if (!isActive) {
+        NotificationService().cancelMedicationReminder(id);
+      } else {
+        final medication = state.value?.where((m) => m.id == id).firstOrNull;
+        if (medication != null) {
+          await _scheduleNotification(medication);
+        }
+      }
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<void> _scheduleNotification(Medication medication) async {
+    if (!medication.isActive || medication.timeOfDay.isEmpty) return;
+
+    final petsAsync = ref.read(petNotifierProvider);
+    String petName = 'Your pet';
+
+    petsAsync.whenData((pets) {
+      final pet = pets.where((p) => p.id == medication.petId).firstOrNull;
+      if (pet != null) petName = pet.name;
+    });
+
+    await NotificationService().scheduleMedicationReminder(
+      medicationId: medication.id,
+      petName: petName,
+      medicationName: medication.name,
+      dosage: medication.dosage,
+      timeOfDay: medication.timeOfDay,
+      frequency: medication.frequency ?? 'daily',
+      startDate: medication.startDate,
+      endDate: medication.endDate,
+    );
   }
 }

@@ -263,8 +263,8 @@ BottomNavigationBar (5 tabs)
 
 ## 📦 Plan Tiers
 
-| Feature | Free | Paw Plan ($4.99/mo) | Family Plan ($9.99/mo) |
-|---------|------|----------------------|------------------------|
+| Feature | Free | Pro ($4.99/mo) | Premium ($9.99/mo) |
+|---------|------|---------------------|------------------------|
 | Pet profiles | 1 pet | 3 pets | Unlimited |
 | Health records | 5 records | Unlimited | Unlimited |
 | Vaccine tracker | ✅ | ✅ | ✅ |
@@ -272,8 +272,6 @@ BottomNavigationBar (5 tabs)
 | Appointment reminders | ❌ | ✅ | ✅ |
 | Push notifications | ❌ | ✅ | ✅ |
 | PDF passport export | ❌ | ❌ | ✅ |
-| Unlimited pets | ❌ | ❌ | ✅ |
-| Family sharing | ❌ | ❌ | ✅ |
 
 ---
 
@@ -884,10 +882,10 @@ fl_chart: ^0.69.x
 - [ ] On vaccine `next_due_date` approaching → schedule local notification 7 days before
 - [ ] Request notification permission on first launch (iOS: native prompt, Android 13+: runtime permission)
 - [ ] Cancel notifications when appointment is deleted or cancelled
-- [ ] **Server-side (Supabase Edge Function):** Cron to call Resend for Pro/Family plan users:
+- [ ] **Server-side (Supabase Edge Function):** Cron to call Resend for Pro plan users:
   - Query appointments within next 24h where `reminder_sent = false`
   - Send email via Resend, set `reminder_sent = true`
-- [ ] **Gate:** Push + email reminders only for Paw Plan and Family Plan
+- [ ] **Gate:** Push + email reminders only for Pro Plan
 
 **✅ Done when:** Creating an appointment schedules a local notification. Email reminder fires from server.
 
@@ -902,17 +900,15 @@ fl_chart: ^0.69.x
 **Apple App Store Connect:**
 - [ ] Go to App Store Connect → Your App → Subscriptions
 - [ ] Create Subscription Group: `PawPass Premium`
-- [ ] Create two auto-renewable subscriptions:
-  - `com.pawpass.paw.monthly` — $4.99/mo — "Paw Plan Monthly"
-  - `com.pawpass.family.monthly` — $9.99/mo — "Family Plan Monthly"
+- [ ] Create auto-renewable subscription:
+  - `com.pawpass.pro.monthly` — $4.99/mo — "Pro Plan Monthly"
 - [ ] Add subscription descriptions + promotional images
 - [ ] Enable StoreKit testing in Xcode (StoreKit Configuration file for sandbox)
 
 **Google Play Console:**
 - [ ] Go to Play Console → Your App → Monetize → Subscriptions
-- [ ] Create two subscriptions with matching product IDs:
-  - `com.pawpass.paw.monthly`
-  - `com.pawpass.family.monthly`
+- [ ] Create subscription with matching product ID:
+  - `com.pawpass.pro.monthly`
 - [ ] Add base plan (monthly) + optional offer for each
 - [ ] Enable License Testing in Play Console settings
 
@@ -933,8 +929,7 @@ dependencies:
 // lib/data/repositories/iap_repository.dart
 class IAPRepository {
   static const _productIds = {
-    'com.pawpass.paw.monthly',
-    'com.pawpass.family.monthly',
+    'com.pawpass.pro.monthly',
   };
 
   final _iap = InAppPurchase.instance;
@@ -1001,7 +996,7 @@ Deno.serve(async (req) => {
 });
 
 async function updateUserPlan(userId: string, productId: string) {
-  const plan = productId.includes('family') ? 'family' : 'pro';
+  const plan = 'pro';
   await supabase.from('users').update({ plan }).eq('id', userId);
 }
 ```
@@ -1045,19 +1040,18 @@ void _onPurchaseUpdate(List<PurchaseDetails> purchases) async {
 ```dart
 @riverpod
 class SubscriptionNotifier extends _$SubscriptionNotifier {
-  bool get isPro => state.plan == 'pro' || state.plan == 'family';
-  bool get isFamily => state.plan == 'family';
+  bool get isPro => state.plan == 'pro';
 }
 ```
 
-- [ ] `PricingScreen` — 2 plan cards (Paw / Family) with feature list + prices loaded from store
+- [ ] `PricingScreen` — Pro plan card with feature list + price loaded from store
 - [ ] `UpgradeModal` — bottom sheet shown at every feature gate
 - [ ] "Restore Purchases" button on pricing screen (required by Apple)
 - [ ] Apply gates across all features using `ref.watch(subscriptionProvider)`
 - [ ] Handle edge cases: pending purchases, billing issues, expired subscriptions
 
 **Design notes:**
-- Pricing cards: stacked vertically, Family Plan has `primaryGreen` border + "Best Value" badge
+- Pricing card: Pro Plan with feature list
 - Show real prices fetched from `ProductDetails` — never hardcode prices in UI (exchange rates vary)
 - `UpgradeModal`: paw icon at top, benefit list with checkmarks, two tappable plan cards
 
@@ -1078,7 +1072,7 @@ The Profile tab is the control centre for account, theme, subscription, and pref
 ```
 - [ ] Tappable avatar → `image_picker` → upload to Supabase Storage `pet-photos` bucket
 - [ ] Edit name inline or via a bottom sheet
-- [ ] Show current subscription plan badge (Free / Paw / Family) next to name
+- [ ] Show current subscription plan badge (Free / Pro) next to name
 
 **App settings section:**
 - [ ] `ListTile` — **App Theme** → current theme emoji + name → navigates to `ThemePickerScreen`
@@ -1102,7 +1096,7 @@ The Profile tab is the control centre for account, theme, subscription, and pref
 
 **Design notes:**
 - Avatar: 80px circle, `theme.primaryLight` placeholder background with a paw icon
-- Plan badge: pill chip — Free = `textMuted` outline, Paw = `primaryLight` fill, Family = `primary` fill + white text
+- Plan badge: pill chip — Free = `textMuted` outline, Pro = `primary` fill + white text
 - Section headers: `Plus Jakarta Sans` Medium 11sp, `textMuted`, all-caps with letter spacing
 - Dividers between sections only, not between rows within a section
 - Destructive actions (Sign Out, Delete) separated visually at the bottom with extra top padding
@@ -1184,12 +1178,11 @@ Apply same pattern for: `VetRecord`, `Vaccine`, `Appointment`, `Medication`, `We
 ## 🚀 Post-Launch Roadmap
 
 ### Phase 2 — Growth
-- [ ] PDF Passport Export — downloadable pet passport using `pdf` package (Family Plan)
+- [ ] PDF Passport Export — downloadable pet passport using `pdf` package
 - [ ] Vet Share Link — read-only web link to share pet records
-- [ ] Family Sharing — invite family members via email (Family Plan)
 - [ ] Google Calendar Sync — `google_sign_in` + Calendar API
-- [ ] Custom accent color picker — let users fine-tune their theme's primary color (Pro/Family)
-- [ ] Per-pet theme — assign a different theme color to each pet profile
+- [ ] Custom accent color picker — let users fine-tune their theme's primary color (Pro)
+- [ ] Per-pet theme — assign a different theme color to each pet profile (Pro)
 
 ### Phase 3 — Expansion
 - [ ] AI Symptom Checker — photo or text → Claude API health suggestion
@@ -1209,7 +1202,7 @@ Apply same pattern for: `VetRecord`, `Vaccine`, `Appointment`, `Medication`, `We
 | $500 MRR | Month 2 | 100 free → 50 paid conversions |
 | $1,000 MRR | Month 3 | App Store optimization + Reddit |
 | $3,000 MRR | Month 5 | Vet clinic B2B |
-| $10,000 MRR | Month 9 | SEA market + family plan push |
+| $10,000 MRR | Month 9 | SEA market + Pro plan push |
 
 ---
 

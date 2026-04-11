@@ -21,14 +21,14 @@ class User {
     this.isOnboarding = true,
   });
 
-  bool get isPro => plan == 'pro' || plan == 'family';
-  bool get isFamily => plan == 'family';
+  bool get isPro => plan == 'pro' || plan == 'premium';
+  bool get isPremium => plan == 'premium';
 
   int get maxPets {
     switch (plan) {
       case 'pro':
         return 3;
-      case 'family':
+      case 'premium':
         return 999;
       default:
         return 1;
@@ -38,7 +38,7 @@ class User {
   int get maxRecords {
     switch (plan) {
       case 'pro':
-      case 'family':
+      case 'premium':
         return 999999;
       default:
         return 5;
@@ -49,7 +49,7 @@ class User {
 final userProvider = FutureProvider<User?>((ref) async {
   final supabase = Supabase.instance.client;
   final user = supabase.auth.currentUser;
-  
+
   if (user == null) return null;
 
   final response = await supabase

@@ -1,6 +1,8 @@
 class SupabaseConstants {
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+  );
 
   static const String petPhotosBucket = 'pet-photos';
   static const String vetDocumentsBucket = 'vet-documents';
@@ -14,11 +16,7 @@ class SupabaseConstants {
     'lavender',
   ];
 
-  static const List<String> validPlans = [
-    'free',
-    'pro',
-    'family',
-  ];
+  static const List<String> validPlans = ['free', 'pro', 'premium'];
 
   static const List<String> petSpecies = [
     'Dog',
