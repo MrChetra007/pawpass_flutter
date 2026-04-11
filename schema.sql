@@ -487,3 +487,9 @@ USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own family members"
 ON family_members FOR DELETE
 USING (auth.uid() = owner_id);
+
+alter table public.medications 
+add column if not exists meal_timing text check (meal_timing in ('before_meal', 'after_meal', 'with_meal', 'any')) default 'any',
+add column if not exists frequency_type text check (frequency_type in ('daily', 'weekly', 'monthly')) default 'daily',
+add column if not exists frequency_times integer default 1,
+add column if not exists time_of_day text[] default '{}';
