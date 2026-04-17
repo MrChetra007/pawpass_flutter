@@ -336,20 +336,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             subtitle: 'Free',
             onTap: () => context.push('/billing'),
           ),
-          _buildDivider(),
-          _buildSettingsTile(
-            context,
-            icon: Icons.restore,
-            title: 'Restore Purchases',
-            onTap: () => context.push('/billing'),
-          ),
-          _buildDivider(),
-          _buildSettingsTile(
-            context,
-            icon: Icons.settings,
-            title: 'Manage Subscription',
-            onTap: () => context.push('/billing'),
-          ),
         ],
       ),
     );
