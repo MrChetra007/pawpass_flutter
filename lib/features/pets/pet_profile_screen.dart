@@ -16,6 +16,31 @@ import '../../features/medications/medications_list_screen.dart';
 import '../../features/weight/weight_history_screen.dart';
 import 'add_edit_pet_screen.dart';
 
+class _TailPainter extends CustomPainter {
+  final Color color;
+
+  _TailPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width * 0.6, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class PetProfileScreen extends ConsumerWidget {
   final String petId;
 
@@ -415,6 +440,7 @@ class PetProfileScreen extends ConsumerWidget {
                     count: petVaccines.length,
                     status: statusText,
                     statusColor: statusColor,
+                    hasTail: true,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -461,6 +487,7 @@ class PetProfileScreen extends ConsumerWidget {
                     statusColor: activeMeds > 0
                         ? theme.colorScheme.primary
                         : PawThemeData.successGreen,
+                    hasTail: true,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -496,44 +523,6 @@ class PetProfileScreen extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: recordsAsync.when(
-                data: (records) {
-                  final petRecords = records
-                      .where((r) => r.petId == pet.id)
-                      .length;
-
-                  return _buildHealthCard(
-                    context,
-                    icon: Icons.medical_information,
-                    title: 'Vet Visits',
-                    count: petRecords,
-                    status: 'Total records',
-                    statusColor: theme.colorScheme.secondary,
-                    onTap: () {},
-                  );
-                },
-                loading: () => _buildHealthCard(
-                  context,
-                  icon: Icons.medical_information,
-                  title: 'Vet Visits',
-                  count: 0,
-                  status: 'Loading...',
-                  statusColor: Colors.grey,
-                  onTap: () {},
-                ),
-                error: (_, __) => _buildHealthCard(
-                  context,
-                  icon: Icons.medical_information,
-                  title: 'Vet Visits',
-                  count: 0,
-                  status: 'Error',
-                  statusColor: Colors.red,
-                  onTap: () {},
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
               child: _buildHealthCard(
                 context,
                 icon: Icons.monitor_weight,
@@ -566,16 +555,21 @@ class PetProfileScreen extends ConsumerWidget {
     required String status,
     required Color statusColor,
     required VoidCallback onTap,
+    bool hasTail = false,
   }) {
     final theme = Theme.of(context);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: hasTail ? Radius.zero : Radius.circular(20),
+            bottomRight: hasTail ? Radius.zero : Radius.circular(20),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -584,55 +578,77 @@ class PetProfileScreen extends ConsumerWidget {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.1,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          icon,
+                          size: 20,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: theme.textTheme.labelLarge?.color,
+                      ),
+                    ],
                   ),
-                  child: Icon(icon, size: 20, color: theme.colorScheme.primary),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: theme.textTheme.labelLarge?.color,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        status,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    shape: BoxShape.circle,
-                  ),
+            if (hasTail)
+              Positioned(
+                bottom: -1,
+                left: 16,
+                child: CustomPaint(
+                  size: Size(20, 10),
+                  painter: _TailPainter(color: theme.colorScheme.surface),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  status,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+              ),
           ],
         ),
       ),
