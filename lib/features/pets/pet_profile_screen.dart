@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../data/models/pet_model.dart';
+import '../../data/models/vaccine_model.dart';
 import '../../shared/providers/pet_provider.dart';
 import '../../shared/providers/vaccine_provider.dart';
 import '../../shared/providers/medication_provider.dart';
@@ -9,6 +10,7 @@ import '../../shared/providers/record_provider.dart';
 import '../../shared/widgets/paw_card.dart';
 import '../../core/utils/feature_gate.dart';
 import '../../core/services/pdf_service.dart';
+import '../../core/theme/app_theme_data.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/medications/medications_list_screen.dart';
 import '../../features/weight/weight_history_screen.dart';
@@ -22,12 +24,10 @@ class PetProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final petsAsync = ref.watch(petNotifierProvider);
-    final theme = Theme.of(context);
 
     return petsAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: Center(child: Text('Error: $e')),
@@ -51,16 +51,18 @@ class PetProfileScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildBasicInfo(context, pet),
+                      _buildQuickStats(context, ref, pet),
                       const SizedBox(height: 24),
                       _buildDetailsSection(context, pet),
+                      const SizedBox(height: 24),
+                      _buildHealthSummary(context, ref, pet),
+                      const SizedBox(height: 24),
+                      _buildQuickActions(context, ref, pet),
                       const SizedBox(height: 24),
                       if (pet.notes != null && pet.notes!.isNotEmpty) ...[
                         _buildNotesSection(context, pet),
                         const SizedBox(height: 24),
                       ],
-                      _buildHealthSection(context, ref, pet),
-                      const SizedBox(height: 24),
                       _buildDangerZone(context, ref, pet),
                       const SizedBox(height: 32),
                     ],
@@ -78,8 +80,13 @@ class PetProfileScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 260,
       pinned: true,
+      backgroundColor: theme.colorScheme.primary,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () => context.pop(),
+      ),
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
@@ -89,30 +96,33 @@ class PetProfileScreen extends ConsumerWidget {
                 gradient: LinearGradient(
                   colors: [
                     theme.colorScheme.primary,
-                    theme.colorScheme.primary.withValues(alpha: 0.7),
+                    theme.colorScheme.primary.withValues(alpha: 0.8),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
               ),
-              child: pet.photoUrl != null
-                  ? Image.network(
-                      pet.photoUrl!,
-                      fit: BoxFit.cover,
-                    )
-                  : Center(
-                      child: Text(
-                        pet.speciesEmoji,
-                        style: const TextStyle(fontSize: 80),
-                      ),
-                    ),
             ),
+            if (pet.photoUrl != null)
+              Image.network(
+                pet.photoUrl!,
+                fit: BoxFit.cover,
+                colorBlendMode: BlendMode.overlay,
+                color: Colors.black.withValues(alpha: 0.3),
+              )
+            else
+              Center(
+                child: Text(
+                  pet.speciesEmoji,
+                  style: const TextStyle(fontSize: 100),
+                ),
+              ),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(alpha: 0.5),
+                    Colors.black.withValues(alpha: 0.6),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -134,12 +144,27 @@ class PetProfileScreen extends ConsumerWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
-                    '${pet.species}${pet.breed != null ? ' • ${pet.breed}' : ''}',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 16,
-                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${pet.species}${pet.breed != null ? ' • ${pet.breed}' : ''}',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -163,54 +188,145 @@ class PetProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBasicInfo(BuildContext context, Pet pet) {
+  Widget _buildQuickStats(BuildContext context, WidgetRef ref, Pet pet) {
     final theme = Theme.of(context);
 
-    return PawCard(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildInfoItem(context, 'Species', pet.species),
-          _buildInfoItem(context, 'Gender', _formatGender(pet.gender)),
-          _buildInfoItem(context, 'Age', pet.ageString),
-        ],
-      ),
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatCard(
+            context,
+            icon: Icons.cake,
+            label: 'Age',
+            value: pet.ageString,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            context,
+            icon: Icons.monitor_weight,
+            label: 'Weight',
+            value: pet.weightKg != null ? '${pet.weightKg} kg' : '--',
+            color: PawThemeData.successGreen,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            context,
+            icon: pet.gender == 'male' ? Icons.male : Icons.female,
+            label: 'Gender',
+            value: _formatGender(pet.gender),
+            color: pet.gender == 'male' ? Colors.blue : Colors.pink,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildInfoItem(BuildContext context, String label, String value) {
+  Widget _buildStatCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.labelMedium,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.titleMedium,
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.textTheme.labelLarge?.color,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildDetailsSection(BuildContext context, Pet pet) {
     final theme = Theme.of(context);
 
-    return PawCard(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Details',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
           _buildDetailRow(context, 'Breed', pet.breed ?? 'Not specified'),
-          const Divider(),
+          _buildDivider(context),
           _buildDetailRow(context, 'Color', pet.color ?? 'Not specified'),
-          const Divider(),
-          _buildDetailRow(context, 'Weight', pet.weightKg != null ? '${pet.weightKg} kg' : 'Not specified'),
-          const Divider(),
+          _buildDivider(context),
           _buildDetailRow(context, 'Neutered', pet.neutered ? 'Yes' : 'No'),
-          const Divider(),
-          _buildDetailRow(context, 'Microchip', pet.microchip ?? 'Not specified'),
+          _buildDivider(context),
+          _buildDetailRow(
+            context,
+            'Microchip',
+            pet.microchip ?? 'Not specified',
+          ),
+          if (pet.dob != null) ...[
+            _buildDivider(context),
+            _buildDetailRow(
+              context,
+              'Birthday',
+              '${pet.dob!.day}/${pet.dob!.month}/${pet.dob!.year}',
+            ),
+          ],
         ],
       ),
     );
@@ -224,11 +340,16 @@ class PetProfileScreen extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: theme.textTheme.bodyMedium),
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.textTheme.labelLarge?.color,
+            ),
+          ),
           Text(
             value,
             style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -236,234 +357,482 @@ class PetProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotesSection(BuildContext context, Pet pet) {
-    final theme = Theme.of(context);
-
-    return PawCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Notes', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(pet.notes!, style: theme.textTheme.bodyMedium),
-        ],
-      ),
+  Widget _buildDivider(BuildContext context) {
+    return Divider(
+      height: 1,
+      color: Theme.of(context).dividerTheme.color?.withValues(alpha: 0.3),
     );
   }
 
-  Widget _buildHealthSection(BuildContext context, WidgetRef ref, Pet pet) {
+  Widget _buildHealthSummary(BuildContext context, WidgetRef ref, Pet pet) {
+    final theme = Theme.of(context);
+    final vaccinesAsync = ref.watch(vaccineNotifierProvider);
+    final medicationsAsync = ref.watch(medicationNotifierProvider);
+    final recordsAsync = ref.watch(recordNotifierProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Health', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 12),
-        PawCard(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => VaccinesListScreen(initialPetId: pet.id),
-              ),
-            );
-          },
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.vaccines,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Vaccines', style: Theme.of(context).textTheme.titleMedium),
-                    Text(
-                      'Track vaccination records',
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right),
-            ],
+        Text(
+          'Health Summary',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 12),
-        PawCard(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MedicationsListScreen(initialPetId: pet.id),
-              ),
-            );
-          },
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.medication,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Medications', style: Theme.of(context).textTheme.titleMedium),
-                    Text(
-                      'Manage medications',
-                      style: Theme.of(context).textTheme.labelMedium,
+        Row(
+          children: [
+            Expanded(
+              child: vaccinesAsync.when(
+                data: (vaccines) {
+                  final petVaccines = vaccines
+                      .where((v) => v.petId == pet.id)
+                      .toList();
+                  final overdue = petVaccines
+                      .where((v) => v.status == VaccineStatus.overdue)
+                      .length;
+                  final dueSoon = petVaccines
+                      .where((v) => v.status == VaccineStatus.dueSoon)
+                      .length;
+
+                  Color statusColor;
+                  String statusText;
+                  if (overdue > 0) {
+                    statusColor = Colors.red;
+                    statusText = '$overdue overdue';
+                  } else if (dueSoon > 0) {
+                    statusColor = Colors.orange;
+                    statusText = '$dueSoon due soon';
+                  } else {
+                    statusColor = PawThemeData.successGreen;
+                    statusText = 'Up to date';
+                  }
+
+                  return _buildHealthCard(
+                    context,
+                    icon: Icons.vaccines,
+                    title: 'Vaccines',
+                    count: petVaccines.length,
+                    status: statusText,
+                    statusColor: statusColor,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            VaccinesListScreen(initialPetId: pet.id),
+                      ),
                     ),
-                  ],
+                  );
+                },
+                loading: () => _buildHealthCard(
+                  context,
+                  icon: Icons.vaccines,
+                  title: 'Vaccines',
+                  count: 0,
+                  status: 'Loading...',
+                  statusColor: Colors.grey,
+                  onTap: () {},
+                ),
+                error: (_, __) => _buildHealthCard(
+                  context,
+                  icon: Icons.vaccines,
+                  title: 'Vaccines',
+                  count: 0,
+                  status: 'Error',
+                  statusColor: Colors.red,
+                  onTap: () {},
                 ),
               ),
-              const Icon(Icons.chevron_right),
-            ],
-          ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: medicationsAsync.when(
+                data: (medications) {
+                  final activeMeds = medications
+                      .where((m) => m.petId == pet.id && m.isActive)
+                      .length;
+
+                  return _buildHealthCard(
+                    context,
+                    icon: Icons.medication,
+                    title: 'Medications',
+                    count: activeMeds,
+                    status: activeMeds > 0 ? 'Active' : 'None',
+                    statusColor: activeMeds > 0
+                        ? theme.colorScheme.primary
+                        : PawThemeData.successGreen,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            MedicationsListScreen(initialPetId: pet.id),
+                      ),
+                    ),
+                  );
+                },
+                loading: () => _buildHealthCard(
+                  context,
+                  icon: Icons.medication,
+                  title: 'Medications',
+                  count: 0,
+                  status: 'Loading...',
+                  statusColor: Colors.grey,
+                  onTap: () {},
+                ),
+                error: (_, __) => _buildHealthCard(
+                  context,
+                  icon: Icons.medication,
+                  title: 'Medications',
+                  count: 0,
+                  status: 'Error',
+                  statusColor: Colors.red,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
-        PawCard(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => WeightHistoryScreen(
-                  petId: pet.id,
-                  petName: pet.name,
+        Row(
+          children: [
+            Expanded(
+              child: recordsAsync.when(
+                data: (records) {
+                  final petRecords = records
+                      .where((r) => r.petId == pet.id)
+                      .length;
+
+                  return _buildHealthCard(
+                    context,
+                    icon: Icons.medical_information,
+                    title: 'Vet Visits',
+                    count: petRecords,
+                    status: 'Total records',
+                    statusColor: theme.colorScheme.secondary,
+                    onTap: () {},
+                  );
+                },
+                loading: () => _buildHealthCard(
+                  context,
+                  icon: Icons.medical_information,
+                  title: 'Vet Visits',
+                  count: 0,
+                  status: 'Loading...',
+                  statusColor: Colors.grey,
+                  onTap: () {},
+                ),
+                error: (_, __) => _buildHealthCard(
+                  context,
+                  icon: Icons.medical_information,
+                  title: 'Vet Visits',
+                  count: 0,
+                  status: 'Error',
+                  statusColor: Colors.red,
+                  onTap: () {},
                 ),
               ),
-            );
-          },
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.monitor_weight,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Weight History', style: Theme.of(context).textTheme.titleMedium),
-                    Text(
-                      'Track weight over time',
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                  ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildHealthCard(
+                context,
+                icon: Icons.monitor_weight,
+                title: 'Weight',
+                count: pet.weightKg != null ? 1 : 0,
+                status: pet.weightKg != null ? '${pet.weightKg} kg' : 'Not set',
+                statusColor: pet.weightKg != null
+                    ? PawThemeData.successGreen
+                    : Colors.orange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        WeightHistoryScreen(petId: pet.id, petName: pet.name),
+                  ),
                 ),
               ),
-              const Icon(Icons.chevron_right),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        PawCard(
-          onTap: () => _exportPdf(context, ref, pet),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.picture_as_pdf,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Export Passport', style: Theme.of(context).textTheme.titleMedium),
-                    Text(
-                      'Generate PDF with all health records',
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Future<void> _exportPdf(BuildContext context, WidgetRef ref, Pet pet) async {
-    final hasAccess = await FeatureGate.check(
-      context: context,
-      ref: ref,
-      feature: 'pdf_export',
+  Widget _buildHealthCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required int count,
+    required String status,
+    required Color statusColor,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, size: 20, color: theme.colorScheme.primary),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: theme.textTheme.labelLarge?.color,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  status,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: statusColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
-    
-    if (!hasAccess) return;
+  }
 
-    try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Generating PDF...')),
-      );
+  Widget _buildQuickActions(BuildContext context, WidgetRef ref, Pet pet) {
+    final theme = Theme.of(context);
 
-      final vaccines = await ref.read(vaccineRepositoryProvider).getVaccines(petId: pet.id);
-      final medications = await ref.read(medicationRepositoryProvider).getMedications(petId: pet.id);
-      final records = await ref.read(recordRepositoryProvider).getRecords(petId: pet.id);
+    return PawCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _buildActionTile(
+            context,
+            icon: Icons.picture_as_pdf,
+            title: 'Export Passport',
+            subtitle: 'Generate PDF with all health records',
+            iconColor: theme.colorScheme.primary,
+            iconBgColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+            onTap: () => _exportPdf(context, ref, pet),
+            isHighlighted: true,
+          ),
+        ],
+      ),
+    );
+  }
 
-      final pdf = await PdfService.generatePetPassport(
-        pet: pet,
-        vaccines: vaccines,
-        medications: medications,
-        records: records,
-      );
+  Widget _buildActionTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+    required Color iconBgColor,
+    required VoidCallback onTap,
+    bool isHighlighted = false,
+  }) {
+    final theme = Theme.of(context);
 
-      if (context.mounted) {
-        await PdfService.printOrSavePdf(context, pdf, '${pet.name}_passport.pdf');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error generating PDF: $e')),
-        );
-      }
-    }
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: isHighlighted
+            ? BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                ),
+              )
+            : null,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.labelLarge?.color,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotesSection(BuildContext context, Pet pet) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.notes,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Notes',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            pet.notes!,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.textTheme.labelLarge?.color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildDangerZone(BuildContext context, WidgetRef ref, Pet pet) {
-    return PawCard(
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.delete_outline, color: Colors.red),
-        title: const Text(
-          'Delete Pet',
-          style: TextStyle(color: Colors.red),
-        ),
-        subtitle: const Text('This action cannot be undone'),
-        onTap: () => _showDeleteConfirmation(context, ref, pet),
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.delete_outline,
+              color: Colors.red,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Delete Pet',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red,
+                  ),
+                ),
+                Text(
+                  'This action cannot be undone',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.labelLarge?.color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right, color: Colors.red),
+            onPressed: () => _showDeleteConfirmation(context, ref, pet),
+          ),
+        ],
       ),
     );
   }
@@ -494,6 +863,53 @@ class PetProfileScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _exportPdf(BuildContext context, WidgetRef ref, Pet pet) async {
+    final hasAccess = await FeatureGate.check(
+      context: context,
+      ref: ref,
+      feature: 'pdf_export',
+    );
+
+    if (!hasAccess) return;
+
+    try {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Generating PDF...')));
+
+      final vaccines = await ref
+          .read(vaccineRepositoryProvider)
+          .getVaccines(petId: pet.id);
+      final medications = await ref
+          .read(medicationRepositoryProvider)
+          .getMedications(petId: pet.id);
+      final records = await ref
+          .read(recordRepositoryProvider)
+          .getRecords(petId: pet.id);
+
+      final pdf = await PdfService.generatePetPassport(
+        pet: pet,
+        vaccines: vaccines,
+        medications: medications,
+        records: records,
+      );
+
+      if (context.mounted) {
+        await PdfService.printOrSavePdf(
+          context,
+          pdf,
+          '${pet.name}_passport.pdf',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
+      }
+    }
   }
 
   String _formatGender(String? gender) {

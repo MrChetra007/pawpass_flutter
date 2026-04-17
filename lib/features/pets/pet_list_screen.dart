@@ -17,7 +17,8 @@ class PetListScreen extends ConsumerStatefulWidget {
   ConsumerState<PetListScreen> createState() => _PetListScreenState();
 }
 
-class _PetListScreenState extends ConsumerState<PetListScreen> with TickerProviderStateMixin {
+class _PetListScreenState extends ConsumerState<PetListScreen>
+    with TickerProviderStateMixin {
   late AnimationController _listAnimationController;
   late Animation<double> _fadeAnimation;
 
@@ -65,7 +66,10 @@ class _PetListScreenState extends ConsumerState<PetListScreen> with TickerProvid
                     children: [
                       Text('My Pets', style: theme.textTheme.headlineMedium),
                       const SizedBox(height: 4),
-                      Text('Manage your furry family members', style: theme.textTheme.labelLarge),
+                      Text(
+                        'Manage your furry family members',
+                        style: theme.textTheme.labelLarge,
+                      ),
                     ],
                   ),
                 ),
@@ -84,35 +88,39 @@ class _PetListScreenState extends ConsumerState<PetListScreen> with TickerProvid
                   childCount: 3,
                 ),
               ),
-              error: (e, _) => SliverFillRemaining(
-                child: _buildErrorState(e.toString()),
-              ),
+              error: (e, _) =>
+                  SliverFillRemaining(child: _buildErrorState(e.toString())),
               data: (pets) {
                 if (pets.isEmpty) {
                   return SliverFillRemaining(
                     child: EmptyState(
                       icon: Icons.pets,
                       title: 'No pets yet',
-                      subtitle: 'Add your first pet to start tracking their health',
+                      subtitle:
+                          'Add your first pet to start tracking their health',
                       actionLabel: 'Add Pet',
                       onAction: () => _showAddPetModal(context, userAsync),
                     ),
                   );
                 }
-                
+
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!_listAnimationController.isCompleted) {
                     _listAnimationController.forward();
                   }
                 });
-                
+
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => FadeTransition(
                       opacity: _fadeAnimation,
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildPetCard(context, pet: pets[index], index: index),
+                        child: _buildPetCard(
+                          context,
+                          pet: pets[index],
+                          index: index,
+                        ),
                       ),
                     ),
                     childCount: pets.length,
@@ -153,7 +161,11 @@ class _PetListScreenState extends ConsumerState<PetListScreen> with TickerProvid
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Theme.of(context).colorScheme.error,
+          ),
           const SizedBox(height: 16),
           Text('Error: $error'),
           const SizedBox(height: 16),
@@ -166,7 +178,11 @@ class _PetListScreenState extends ConsumerState<PetListScreen> with TickerProvid
     );
   }
 
-  Widget _buildPetCard(BuildContext context, {required Pet pet, required int index}) {
+  Widget _buildPetCard(
+    BuildContext context, {
+    required Pet pet,
+    required int index,
+  }) {
     final theme = Theme.of(context);
 
     return GestureDetector(
@@ -218,7 +234,9 @@ class _PetListScreenState extends ConsumerState<PetListScreen> with TickerProvid
                 children: [
                   Text(
                     pet.name,
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -229,10 +247,7 @@ class _PetListScreenState extends ConsumerState<PetListScreen> with TickerProvid
                   ),
                   if (pet.dob != null) ...[
                     const SizedBox(height: 4),
-                    Text(
-                      pet.ageString,
-                      style: theme.textTheme.labelMedium,
-                    ),
+                    Text(pet.ageString, style: theme.textTheme.labelMedium),
                   ],
                 ],
               ),
@@ -258,9 +273,7 @@ class _PetListScreenState extends ConsumerState<PetListScreen> with TickerProvid
   void _showAddPetModal(BuildContext context, AsyncValue<User?> userAsync) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AddEditPetScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const AddEditPetScreen()),
     );
   }
 }
@@ -275,7 +288,8 @@ class _AnimatedFab extends StatefulWidget {
   State<_AnimatedFab> createState() => _AnimatedFabState();
 }
 
-class _AnimatedFabState extends State<_AnimatedFab> with SingleTickerProviderStateMixin {
+class _AnimatedFabState extends State<_AnimatedFab>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -286,7 +300,10 @@ class _AnimatedFabState extends State<_AnimatedFab> with SingleTickerProviderSta
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override

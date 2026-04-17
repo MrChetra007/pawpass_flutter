@@ -18,31 +18,46 @@ class PdfService {
     final pdf = pw.Document();
     final dateFormat = DateFormat('MMM d, yyyy');
 
+    final primaryColor = PdfColor.fromInt(0xFF2563EB);
+    final successColor = PdfColor.fromInt(0xFF10B981);
+    final warningColor = PdfColor.fromInt(0xFFF59E0B);
+    final dangerColor = PdfColor.fromInt(0xFFEF4444);
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(32),
+        margin: const pw.EdgeInsets.all(40),
         build: (context) => [
-          _buildHeader(pet),
-          pw.SizedBox(height: 20),
-          _buildPetInfo(pet, dateFormat),
-          pw.SizedBox(height: 20),
+          _buildHeader(pet, primaryColor),
+          pw.SizedBox(height: 25),
+          _buildPetInfoCard(pet, dateFormat),
+          pw.SizedBox(height: 25),
           if (vaccines.isNotEmpty) ...[
-            _buildSectionTitle('Vaccinations'),
-            pw.SizedBox(height: 10),
-            ...vaccines.map((v) => _buildVaccineItem(v, dateFormat)),
+            _buildSectionHeader('Vaccinations', primaryColor),
+            pw.SizedBox(height: 12),
+            ...vaccines.map(
+              (v) => _buildVaccineItem(
+                v,
+                dateFormat,
+                dangerColor,
+                warningColor,
+                successColor,
+              ),
+            ),
             pw.SizedBox(height: 20),
           ],
-          if (medications.isNotEmpty) ...[
-            _buildSectionTitle('Current Medications'),
-            pw.SizedBox(height: 10),
-            ...medications.where((m) => m.isActive).map((m) => _buildMedicationItem(m, dateFormat)),
+          if (medications.where((m) => m.isActive).isNotEmpty) ...[
+            _buildSectionHeader('Current Medications', primaryColor),
+            pw.SizedBox(height: 12),
+            ...medications
+                .where((m) => m.isActive)
+                .map((m) => _buildMedicationItem(m, dateFormat)),
             pw.SizedBox(height: 20),
           ],
           if (records.isNotEmpty) ...[
-            _buildSectionTitle('Health Records'),
-            pw.SizedBox(height: 10),
-            ...records.map((r) => _buildRecordItem(r, dateFormat)),
+            _buildSectionHeader('Health Records', primaryColor),
+            pw.SizedBox(height: 12),
+            ...records.take(10).map((r) => _buildRecordItem(r, dateFormat)),
           ],
           pw.SizedBox(height: 30),
           _buildFooter(),
@@ -53,123 +68,394 @@ class PdfService {
     return pdf;
   }
 
-  static pw.Widget _buildHeader(Pet pet) {
+  static pw.Widget _buildHeader(Pet pet, PdfColor primaryColor) {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
+      padding: const pw.EdgeInsets.all(24),
       decoration: pw.BoxDecoration(
-        color: PdfColors.teal50,
-        borderRadius: pw.BorderRadius.circular(8),
+        gradient: pw.LinearGradient(
+          colors: [primaryColor, primaryColor.shade(0.8)],
+          begin: pw.Alignment.centerLeft,
+          end: pw.Alignment.centerRight,
+        ),
+        borderRadius: pw.BorderRadius.circular(12),
       ),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.center,
         children: [
           pw.Text(
-            '🐾',
-            style: pw.TextStyle(fontSize: 24),
+            'PawPass',
+            style: pw.TextStyle(
+              fontSize: 28,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.white,
+            ),
           ),
-          pw.SizedBox(width: 12),
+          pw.SizedBox(width: 8),
           pw.Text(
             'Pet Passport',
             style: pw.TextStyle(
-              fontSize: 24,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColors.teal900,
+              fontSize: 28,
+              fontWeight: pw.FontWeight.normal,
+              color: PdfColors.white,
             ),
           ),
-          pw.SizedBox(width: 12),
-          pw.Text(
-            pet.speciesEmoji,
-            style: pw.TextStyle(fontSize: 24),
+          pw.SizedBox(width: 16),
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              borderRadius: pw.BorderRadius.circular(20),
+            ),
+            child: pw.Text(
+              pet.species,
+              style: pw.TextStyle(
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+                color: primaryColor,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  static pw.Widget _buildPetInfo(Pet pet, DateFormat dateFormat) {
+  static pw.Widget _buildPetInfoCard(Pet pet, DateFormat dateFormat) {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
+      padding: const pw.EdgeInsets.all(20),
       decoration: pw.BoxDecoration(
+        color: PdfColor.fromInt(0xFFE0F0FF),
+        borderRadius: pw.BorderRadius.circular(12),
         border: pw.Border.all(color: PdfColors.grey300),
-        borderRadius: pw.BorderRadius.circular(8),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(
-            pet.name,
-            style: pw.TextStyle(
-              fontSize: 20,
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-          pw.SizedBox(height: 12),
+          // ── TOP TITLE BAR ──────────────────────────────────────────────
           pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              _buildInfoChip('Species', pet.species),
-              if (pet.breed != null) _buildInfoChip('Breed', pet.breed!),
-              if (pet.gender != null) _buildInfoChip('Gender', pet.gender!),
+              pw.Text(
+                'PET  IDENTIFICATION CARD',
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              pw.Row(
+                children: [
+                  _buildBone(size: 28),
+                  pw.SizedBox(width: 6),
+                  _buildPawPrint(size: 28),
+                ],
+              ),
             ],
           ),
-          pw.SizedBox(height: 8),
+
+          pw.SizedBox(height: 16),
+
+          // ── BODY: LEFT (photo + barcode) | RIGHT (fields) ──────────────
           pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              if (pet.dob != null)
-                _buildInfoChip('Birthday', dateFormat.format(pet.dob!)),
-              if (pet.dob != null) _buildInfoChip('Age', pet.ageString),
-              if (pet.weightKg != null)
-                _buildInfoChip('Weight', '${pet.weightKg} kg'),
-            ],
-          ),
-          pw.SizedBox(height: 8),
-          pw.Row(
-            children: [
-              _buildInfoChip('Neutered', pet.neutered ? 'Yes' : 'No'),
-              if (pet.color != null) _buildInfoChip('Color', pet.color!),
-              if (pet.microchip != null)
-                _buildInfoChip('Microchip', pet.microchip!),
+              // ── LEFT COLUMN ────────────────────────────────────────────
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  // Photo placeholder
+                  pw.Container(
+                    width: 140,
+                    height: 140,
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.grey300,
+                      borderRadius: pw.BorderRadius.circular(6),
+                      border: pw.Border.all(color: PdfColors.grey500, width: 2),
+                    ),
+                    child: pw.Center(
+                      child: _buildPawPrint(size: 60, color: PdfColors.grey600),
+                    ),
+                  ),
+
+                  pw.SizedBox(height: 12),
+
+                  // Barcode
+                  _buildBarcode(width: 140, height: 40),
+                ],
+              ),
+
+              pw.SizedBox(width: 20),
+
+              // ── RIGHT COLUMN ───────────────────────────────────────────
+              pw.Expanded(
+                child: pw.Stack(
+                  children: [
+                    // Circular watermark behind fields
+                    pw.Positioned(
+                      top: 0,
+                      right: 0,
+                      child: pw.Container(
+                        width: 180,
+                        height: 180,
+                        decoration: const pw.BoxDecoration(
+                          color: PdfColors.grey300,
+                          shape: pw.BoxShape.circle,
+                        ),
+                        child: pw.Center(
+                          child: _buildPawPrint(
+                            size: 80,
+                            color: PdfColors.grey500,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Fields on top of watermark
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        // "Name of the Pet" label
+                        pw.Text(
+                          'Name of the Pet:',
+                          style: pw.TextStyle(
+                            fontSize: 11,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                        pw.SizedBox(height: 2),
+
+                        // Big pet name
+                        pw.Text(
+                          pet.name.toUpperCase(),
+                          style: pw.TextStyle(
+                            fontSize: 30,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+
+                        pw.Divider(color: PdfColors.black, thickness: 1.5),
+                        pw.SizedBox(height: 10),
+
+                        // Underlined info fields
+                        _buildIdField(
+                          'Birthday',
+                          pet.dob != null ? dateFormat.format(pet.dob!) : 'N/A',
+                        ),
+                        _buildIdField('Sex', pet.gender ?? 'N/A'),
+                        _buildIdField('Hair Color', pet.color ?? 'N/A'),
+                        _buildIdField('Breed', pet.breed ?? 'N/A'),
+
+                        pw.SizedBox(height: 16),
+
+                        // Paw Print Mark box
+                        pw.Row(
+                          children: [
+                            pw.Text(
+                              'Paw Print Mark:',
+                              style: pw.TextStyle(
+                                fontSize: 11,
+                                color: PdfColors.grey700,
+                              ),
+                            ),
+                            pw.SizedBox(width: 10),
+                            pw.Container(
+                              width: 50,
+                              height: 50,
+                              decoration: pw.BoxDecoration(
+                                border: pw.Border.all(
+                                  color: PdfColors.black,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: pw.Center(child: _buildPawPrint(size: 36)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  // ── HELPER: Underlined label-value row ─────────────────────────────────────
+  static pw.Widget _buildIdField(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            children: [
+              pw.SizedBox(
+                width: 80,
+                child: pw.Text(
+                  '$label:',
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                ),
+              ),
+              pw.Expanded(
+                child: pw.Text(
+                  value,
+                  style: pw.TextStyle(
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+          pw.Divider(color: PdfColors.grey600, thickness: 0.8),
+        ],
+      ),
+    );
+  }
+
+  // ── HELPER: Drawn paw print (no emoji) ─────────────────────────────────────
+  static pw.Widget _buildPawPrint({double size = 30, PdfColor? color}) {
+    final c = color ?? PdfColors.black;
+    return pw.CustomPaint(
+      size: PdfPoint(size, size),
+      painter: (canvas, pdfSize) {
+        final s = size;
+
+        void fillCircle(double x, double y, double r) {
+          canvas
+            ..setFillColor(c)
+            ..drawEllipse(x, y, r, r)
+            ..fillPath();
+        }
+
+        // Main pad (large oval)
+        canvas
+          ..setFillColor(c)
+          ..drawEllipse(s * 0.5, s * 0.35, s * 0.28, s * 0.22)
+          ..fillPath();
+
+        // Three toe beans (top row)
+        fillCircle(s * 0.22, s * 0.70, s * 0.10);
+        fillCircle(s * 0.50, s * 0.78, s * 0.10);
+        fillCircle(s * 0.78, s * 0.70, s * 0.10);
+
+        // Fourth toe bean (bottom center)
+        fillCircle(s * 0.50, s * 0.18, s * 0.09);
+      },
+    );
+  }
+
+  // ── HELPER: Drawn bone (no emoji) ──────────────────────────────────────────
+  static pw.Widget _buildBone({double size = 30}) {
+    return pw.CustomPaint(
+      size: PdfPoint(size, size * 0.5),
+      painter: (canvas, pdfSize) {
+        final w = size;
+        final h = size * 0.5;
+        final r = h * 0.35;
+        final midH = h * 0.3;
+
+        canvas.setFillColor(PdfColors.black);
+
+        // Center bar
+        canvas
+          ..drawRect(w * 0.2, h * 0.5 - midH, w * 0.6, midH * 2)
+          ..fillPath();
+
+        // End caps (two circles each side)
+        void boneEnd(double cx, double cy) {
+          canvas
+            ..drawEllipse(cx, cy - r * 0.6, r, r)
+            ..fillPath();
+          canvas
+            ..drawEllipse(cx, cy + r * 0.6, r, r)
+            ..fillPath();
+        }
+
+        boneEnd(w * 0.18, h * 0.5); // left
+        boneEnd(w * 0.82, h * 0.5); // right
+      },
+    );
+  }
+
+  // ── HELPER: Drawn barcode (no package needed) ───────────────────────────────
+  static pw.Widget _buildBarcode({double width = 140, double height = 40}) {
+    return pw.CustomPaint(
+      size: PdfPoint(width, height),
+      painter: (canvas, size) {
+        final bars = [
+          3,
+          1,
+          2,
+          1,
+          3,
+          2,
+          1,
+          2,
+          1,
+          3,
+          1,
+          2,
+          3,
+          1,
+          2,
+          1,
+          3,
+          2,
+          1,
+          2,
+          1,
+          3,
+          2,
+          1,
+          2,
+        ];
+        double x = 0;
+        const gap = 1.5;
+        bool black = true;
+        for (final w in bars) {
+          if (black) {
+            canvas
+              ..setFillColor(PdfColors.black)
+              ..drawRect(x, 0, w.toDouble(), height)
+              ..fillPath();
+          }
+          x += w + gap;
+          black = !black;
+        }
+      },
     );
   }
 
   static pw.Widget _buildInfoChip(String label, String value) {
     return pw.Container(
-      margin: const pw.EdgeInsets.only(right: 12, bottom: 8),
-      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: pw.BoxDecoration(
-        color: PdfColors.grey100,
-        borderRadius: pw.BorderRadius.circular(4),
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(20),
+        border: pw.Border.all(color: PdfColors.grey300),
       ),
-      child: pw.RichText(
-        text: pw.TextSpan(
-          children: [
-            pw.TextSpan(
-              text: '$label: ',
-              style: pw.TextStyle(
-                fontSize: 10,
-                fontWeight: pw.FontWeight.bold,
-                color: PdfColors.grey700,
-              ),
-            ),
-            pw.TextSpan(
-              text: value,
-              style: pw.TextStyle(fontSize: 10),
-            ),
-          ],
+      child: pw.Text(
+        '$label: $value',
+        style: pw.TextStyle(
+          fontSize: 10,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColors.grey800,
         ),
       ),
     );
   }
 
-  static pw.Widget _buildSectionTitle(String title) {
+  static pw.Widget _buildSectionHeader(String title, PdfColor primaryColor) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: pw.BoxDecoration(
-        color: PdfColors.teal,
-        borderRadius: pw.BorderRadius.circular(4),
+        color: primaryColor,
+        borderRadius: pw.BorderRadius.circular(8),
       ),
       child: pw.Text(
         title,
@@ -182,13 +468,26 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildVaccineItem(Vaccine vaccine, DateFormat dateFormat) {
+  static pw.Widget _buildVaccineItem(
+    Vaccine vaccine,
+    DateFormat dateFormat,
+    PdfColor dangerColor,
+    PdfColor warningColor,
+    PdfColor successColor,
+  ) {
+    final color = vaccine.status == VaccineStatus.overdue
+        ? dangerColor
+        : vaccine.status == VaccineStatus.dueSoon
+        ? warningColor
+        : successColor;
+
     return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 8),
-      padding: const pw.EdgeInsets.all(12),
+      margin: const pw.EdgeInsets.only(bottom: 10),
+      padding: const pw.EdgeInsets.all(14),
       decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey300),
-        borderRadius: pw.BorderRadius.circular(4),
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(10),
+        border: pw.Border.all(color: PdfColors.grey200),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -198,31 +497,72 @@ class PdfService {
             children: [
               pw.Text(
                 vaccine.name,
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                  fontSize: 13,
+                  fontWeight: pw.FontWeight.bold,
+                ),
               ),
-              pw.Text(
-                dateFormat.format(vaccine.dateGiven),
-                style: pw.TextStyle(color: PdfColors.grey600, fontSize: 10),
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: pw.BoxDecoration(
+                  color: color.shade(0.9),
+                  borderRadius: pw.BorderRadius.circular(4),
+                ),
+                child: pw.Text(
+                  vaccine.status.name.toUpperCase(),
+                  style: pw.TextStyle(
+                    fontSize: 8,
+                    fontWeight: pw.FontWeight.bold,
+                    color: color,
+                  ),
+                ),
               ),
             ],
           ),
-          if (vaccine.nextDueDate != null) ...[
-            pw.SizedBox(height: 4),
-            pw.Text(
-              'Next due: ${dateFormat.format(vaccine.nextDueDate!)}',
-              style: pw.TextStyle(
-                fontSize: 10,
-                color: vaccine.status == VaccineStatus.overdue
-                    ? PdfColors.red
-                    : PdfColors.grey600,
+          pw.SizedBox(height: 8),
+          pw.Row(
+            children: [
+              pw.Text(
+                'Given: ',
+                style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
               ),
-            ),
-          ],
+              pw.Text(
+                dateFormat.format(vaccine.dateGiven),
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              if (vaccine.nextDueDate != null) ...[
+                pw.SizedBox(width: 16),
+                pw.Text(
+                  'Next due: ',
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                ),
+                pw.Text(
+                  dateFormat.format(vaccine.nextDueDate!),
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: vaccine.status == VaccineStatus.overdue
+                        ? dangerColor
+                        : PdfColors.grey900,
+                  ),
+                ),
+              ],
+            ],
+          ),
           if (vaccine.vetName != null || vaccine.clinicName != null) ...[
             pw.SizedBox(height: 4),
             pw.Text(
-              [vaccine.vetName, vaccine.clinicName].where((e) => e != null).join(' - '),
-              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+              [
+                vaccine.vetName,
+                vaccine.clinicName,
+              ].where((e) => e != null).join(', '),
+              style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
             ),
           ],
         ],
@@ -230,54 +570,17 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildMedicationItem(Medication medication, DateFormat dateFormat) {
+  static pw.Widget _buildMedicationItem(
+    Medication medication,
+    DateFormat dateFormat,
+  ) {
     return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 8),
-      padding: const pw.EdgeInsets.all(12),
+      margin: const pw.EdgeInsets.only(bottom: 10),
+      padding: const pw.EdgeInsets.all(14),
       decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey300),
-        borderRadius: pw.BorderRadius.circular(4),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(
-            medication.name,
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-          ),
-          if (medication.dosage != null) ...[
-            pw.SizedBox(height: 4),
-            pw.Text(
-              'Dosage: ${medication.dosage}',
-              style: pw.TextStyle(fontSize: 10),
-            ),
-          ],
-          if (medication.frequency != null) ...[
-            pw.SizedBox(height: 2),
-            pw.Text(
-              'Frequency: ${medication.frequency}',
-              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
-            ),
-          ],
-          if (medication.startDate != null) ...[
-            pw.SizedBox(height: 2),
-            pw.Text(
-              'Started: ${dateFormat.format(medication.startDate!)}',
-              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  static pw.Widget _buildRecordItem(VetRecord record, DateFormat dateFormat) {
-    return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 8),
-      padding: const pw.EdgeInsets.all(12),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey300),
-        borderRadius: pw.BorderRadius.circular(4),
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(10),
+        border: pw.Border.all(color: PdfColors.grey200),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -286,39 +589,133 @@ class PdfService {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text(
-                record.title,
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                medication.name,
+                style: pw.TextStyle(
+                  fontSize: 13,
+                  fontWeight: pw.FontWeight.bold,
+                ),
               ),
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
                 decoration: pw.BoxDecoration(
-                  color: PdfColors.grey200,
+                  color: PdfColors.green50,
                   borderRadius: pw.BorderRadius.circular(4),
                 ),
                 child: pw.Text(
-                  record.type,
-                  style: pw.TextStyle(fontSize: 9),
+                  'ACTIVE',
+                  style: pw.TextStyle(
+                    fontSize: 8,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.green800,
+                  ),
                 ),
               ),
             ],
           ),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            dateFormat.format(record.date),
-            style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
-          ),
-          if (record.notes != null) ...[
-            pw.SizedBox(height: 4),
+          pw.SizedBox(height: 8),
+          if (medication.dosage != null)
             pw.Text(
-              record.notes!,
+              'Dosage: ${medication.dosage}',
               style: pw.TextStyle(fontSize: 10),
             ),
-          ],
-          if (record.cost != null) ...[
-            pw.SizedBox(height: 4),
+          if (medication.frequency != null)
             pw.Text(
-              '\$${record.cost!.toStringAsFixed(2)}',
-              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+              'Frequency: ${medication.frequency}',
+              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+            ),
+          if (medication.startDate != null)
+            pw.Text(
+              'Started: ${dateFormat.format(medication.startDate!)}',
+              style: pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildRecordItem(VetRecord record, DateFormat dateFormat) {
+    return pw.Container(
+      margin: const pw.EdgeInsets.only(bottom: 10),
+      padding: const pw.EdgeInsets.all(14),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(10),
+        border: pw.Border.all(color: PdfColors.grey200),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Expanded(
+                child: pw.Text(
+                  record.title,
+                  style: pw.TextStyle(
+                    fontSize: 13,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.grey100,
+                  borderRadius: pw.BorderRadius.circular(4),
+                ),
+                child: pw.Text(
+                  record.type,
+                  style: pw.TextStyle(
+                    fontSize: 8,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 6),
+          pw.Row(
+            children: [
+              pw.Text(
+                'Date: ',
+                style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+              ),
+              pw.Text(
+                dateFormat.format(record.date),
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              if (record.cost != null) ...[
+                pw.SizedBox(width: 16),
+                pw.Text(
+                  'Cost: ',
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                ),
+                pw.Text(
+                  '\$${record.cost!.toStringAsFixed(2)}',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (record.notes != null && record.notes!.isNotEmpty) ...[
+            pw.SizedBox(height: 6),
+            pw.Text(
+              record.notes!,
+              style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+              maxLines: 2,
             ),
           ],
         ],
@@ -329,21 +726,29 @@ class PdfService {
   static pw.Widget _buildFooter() {
     return pw.Container(
       alignment: pw.Alignment.center,
-      child: pw.Text(
-        'Generated by PawPass - ${DateFormat('MMM d, yyyy').format(DateTime.now())}',
-        style: pw.TextStyle(
-          fontSize: 10,
-          color: PdfColors.grey500,
-          fontStyle: pw.FontStyle.italic,
-        ),
+      child: pw.Column(
+        children: [
+          pw.Divider(color: PdfColors.grey300),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            'Generated by PawPass',
+            style: pw.TextStyle(fontSize: 10, color: PdfColors.grey500),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            DateFormat('MMMM d, yyyy').format(DateTime.now()),
+            style: pw.TextStyle(fontSize: 9, color: PdfColors.grey400),
+          ),
+        ],
       ),
     );
   }
 
-  static Future<void> printOrSavePdf(BuildContext context, pw.Document pdf, String fileName) async {
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename: fileName,
-    );
+  static Future<void> printOrSavePdf(
+    BuildContext context,
+    pw.Document pdf,
+    String fileName,
+  ) async {
+    await Printing.sharePdf(bytes: await pdf.save(), filename: fileName);
   }
 }
