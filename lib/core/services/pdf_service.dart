@@ -3,6 +3,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
+import 'package:http/http.dart' as http;
 import '../../data/models/pet_model.dart';
 import '../../data/models/vaccine_model.dart';
 import '../../data/models/medication_model.dart';
@@ -23,6 +24,16 @@ class PdfService {
     final warningColor = PdfColor.fromInt(0xFFF59E0B);
     final dangerColor = PdfColor.fromInt(0xFFEF4444);
 
+    pw.MemoryImage? petImage;
+    if (pet.photoUrl != null) {
+      try {
+        final response = await http.get(Uri.parse(pet.photoUrl!));
+        if (response.statusCode == 200) {
+          petImage = pw.MemoryImage(response.bodyBytes);
+        }
+      } catch (_) {}
+    }
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -30,7 +41,7 @@ class PdfService {
         build: (context) => [
           _buildHeader(pet, primaryColor),
           pw.SizedBox(height: 25),
-          _buildPetInfoCard(pet, dateFormat),
+          _buildPetInfoCard(pet, dateFormat, petImage),
           pw.SizedBox(height: 25),
           if (vaccines.isNotEmpty) ...[
             _buildSectionHeader('Vaccinations', primaryColor),
@@ -120,7 +131,11 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildPetInfoCard(Pet pet, DateFormat dateFormat) {
+  static pw.Widget _buildPetInfoCard(
+    Pet pet,
+    DateFormat dateFormat, [
+    pw.MemoryImage? petImage,
+  ]) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(20),
       decoration: pw.BoxDecoration(
@@ -163,7 +178,7 @@ class PdfService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
-                  // Photo placeholder
+                  // Photo
                   pw.Container(
                     width: 140,
                     height: 140,
@@ -172,9 +187,18 @@ class PdfService {
                       borderRadius: pw.BorderRadius.circular(6),
                       border: pw.Border.all(color: PdfColors.grey500, width: 2),
                     ),
-                    child: pw.Center(
-                      child: _buildPawPrint(size: 60, color: PdfColors.grey600),
-                    ),
+                    child: petImage != null
+                        ? pw.ClipRRect(
+                            horizontalRadius: 6,
+                            verticalRadius: 6,
+                            child: pw.Image(petImage, fit: pw.BoxFit.cover),
+                          )
+                        : pw.Center(
+                            child: _buildPawPrint(
+                              size: 60,
+                              color: PdfColors.grey600,
+                            ),
+                          ),
                   ),
 
                   pw.SizedBox(height: 12),
