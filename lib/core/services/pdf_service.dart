@@ -625,37 +625,89 @@ class PdfService {
                   vertical: 3,
                 ),
                 decoration: pw.BoxDecoration(
-                  color: PdfColors.green50,
+                  color: medication.isActive
+                      ? PdfColors.green50
+                      : PdfColors.grey200,
                   borderRadius: pw.BorderRadius.circular(4),
                 ),
                 child: pw.Text(
-                  'ACTIVE',
+                  medication.isActive ? 'ACTIVE' : 'INACTIVE',
                   style: pw.TextStyle(
                     fontSize: 8,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.green800,
+                    color: medication.isActive
+                        ? PdfColors.green800
+                        : PdfColors.grey700,
                   ),
                 ),
               ),
             ],
           ),
           pw.SizedBox(height: 8),
-          if (medication.dosage != null)
+          pw.Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            children: [
+              if (medication.dosage != null)
+                _buildMedChip('Dosage', medication.dosage!),
+              if (medication.frequency != null)
+                _buildMedChip('Frequency', medication.frequencyLabel),
+              if (medication.frequencyType != null)
+                _buildMedChip('Type', medication.frequencyType!),
+              if (medication.frequencyTimes != null)
+                _buildMedChip('Times/Day', '${medication.frequencyTimes}'),
+              if (medication.mealTiming != null)
+                _buildMedChip('Meal', medication.mealTimingLabel),
+              if (medication.timeOfDayLabel.isNotEmpty)
+                _buildMedChip('Time', medication.timeOfDayLabel),
+            ],
+          ),
+          pw.SizedBox(height: 6),
+          pw.Row(
+            children: [
+              if (medication.startDate != null)
+                pw.Text(
+                  'Started: ${dateFormat.format(medication.startDate!)}',
+                  style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                ),
+              if (medication.endDate != null) ...[
+                pw.SizedBox(width: 12),
+                pw.Text(
+                  'Ends: ${dateFormat.format(medication.endDate!)}',
+                  style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                ),
+              ],
+            ],
+          ),
+          if (medication.prescribedBy != null) ...[
+            pw.SizedBox(height: 4),
             pw.Text(
-              'Dosage: ${medication.dosage}',
-              style: pw.TextStyle(fontSize: 10),
+              'Prescribed by: ${medication.prescribedBy}',
+              style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
             ),
-          if (medication.frequency != null)
+          ],
+          if (medication.notes != null && medication.notes!.isNotEmpty) ...[
+            pw.SizedBox(height: 4),
             pw.Text(
-              'Frequency: ${medication.frequency}',
-              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+              'Notes: ${medication.notes}',
+              style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
             ),
-          if (medication.startDate != null)
-            pw.Text(
-              'Started: ${dateFormat.format(medication.startDate!)}',
-              style: pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
-            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildMedChip(String label, String value) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey100,
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Text(
+        '$label: $value',
+        style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
       ),
     );
   }
