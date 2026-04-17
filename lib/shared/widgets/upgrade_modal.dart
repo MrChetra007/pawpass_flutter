@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme_data.dart';
 
-class UpgradeModal extends StatelessWidget {
+class UpgradeModal extends StatefulWidget {
   final String? featureName;
   final String? customTitle;
   final String? customMessage;
@@ -46,10 +46,40 @@ class UpgradeModal extends StatelessWidget {
     );
   }
 
-  String _getFeatureMessage() {
-    if (customMessage != null) return customMessage!;
+  @override
+  State<UpgradeModal> createState() => _UpgradeModalState();
+}
 
-    switch (featureName) {
+class _UpgradeModalState extends State<UpgradeModal>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) _animationController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  String _getFeatureMessage() {
+    if (widget.customMessage != null) return widget.customMessage!;
+
+    switch (widget.featureName) {
       case 'appointments':
         return 'Create and manage appointments with Paw Plan';
       case 'records':
@@ -70,9 +100,9 @@ class UpgradeModal extends StatelessWidget {
   }
 
   String _getDefaultTitle() {
-    if (customTitle != null) return customTitle!;
+    if (widget.customTitle != null) return widget.customTitle!;
 
-    switch (featureName) {
+    switch (widget.featureName) {
       case 'appointments':
         return 'Unlock Appointments';
       case 'records':
@@ -97,15 +127,15 @@ class UpgradeModal extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: theme.scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.all(24),
       child: SafeArea(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 12),
             Container(
               width: 40,
               height: 4,
@@ -114,64 +144,111 @@ class UpgradeModal extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.pets,
-                size: 40,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(_getDefaultTitle(), style: theme.textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            Text(
-              _getFeatureMessage(),
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.textTheme.labelLarge?.color,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            _buildPlanCard(
-              context,
-              'Paw Plan',
-              '\$4.99/mo',
-              _getPawPlanFeatures(),
-              false,
-            ),
-            const SizedBox(height: 12),
-            _buildPlanCard(
-              context,
-              'Family Plan',
-              '\$9.99/mo',
-              _getFamilyPlanFeatures(),
-              true,
-            ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Maybe Later',
-                style: TextStyle(color: theme.textTheme.labelLarge?.color),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                context.push('/billing');
-              },
-              child: Text(
-                'View Full Pricing',
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
+            Expanded(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.pets,
+                                size: 40,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _getDefaultTitle(),
+                              style: theme.textTheme.headlineMedium,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _getFeatureMessage(),
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.textTheme.labelLarge?.color,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          _buildPlanCard(
+                            context,
+                            title: 'Pro Plan',
+                            price: '\$4.99',
+                            period: '/month',
+                            description: 'Perfect for single pet owners',
+                            isPopular: false,
+                            features: _getPawPlanFeatures(),
+                            onTap: () => _navigateToBilling(),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildPlanCard(
+                            context,
+                            title: 'Premium Plan',
+                            price: '\$9.99',
+                            period: '/month',
+                            description: 'Best value for multiple pets',
+                            isPopular: true,
+                            features: _getFamilyPlanFeatures(),
+                            onTap: () => _navigateToBilling(),
+                          ),
+                          const SizedBox(height: 24),
+                        ]),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text(
+                                'Maybe Later',
+                                style: TextStyle(
+                                  color: theme.textTheme.labelLarge?.color,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                context.push('/billing');
+                              },
+                              child: Text(
+                                'View Full Pricing',
+                                style: TextStyle(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -181,8 +258,13 @@ class UpgradeModal extends StatelessWidget {
     );
   }
 
+  void _navigateToBilling() {
+    Navigator.pop(context);
+    context.push('/billing');
+  }
+
   List<String> _getPawPlanFeatures() {
-    switch (featureName) {
+    switch (widget.featureName) {
       case 'appointments':
         return ['Create appointments', 'Get reminders', 'Up to 3 pets'];
       case 'records':
@@ -197,97 +279,130 @@ class UpgradeModal extends StatelessWidget {
   }
 
   List<String> _getFamilyPlanFeatures() {
-    switch (featureName) {
+    switch (widget.featureName) {
       case 'pdf_export':
-        return ['PDF passport export', 'Family sharing', 'Everything in Paw'];
+        return [
+          'PDF passport export',
+          'everything paw plan',
+          'Everything in Pro',
+        ];
       case 'family_sharing':
-        return ['Family sharing', 'Unlimited pets', 'Priority support'];
+        return ['everything paw plan', 'Unlimited pets', 'Priority support'];
       default:
         return [
           'Unlimited pets',
           'PDF exports',
-          'Family sharing',
+          'everything paw plan',
           'Priority support',
         ];
     }
   }
 
   Widget _buildPlanCard(
-    BuildContext context,
-    String name,
-    String price,
-    List<String> features,
-    bool isBestValue,
-  ) {
+    BuildContext context, {
+    required String title,
+    required String price,
+    required String period,
+    required String description,
+    required bool isPopular,
+    required List<String> features,
+    required VoidCallback onTap,
+  }) {
     final theme = Theme.of(context);
 
     return GestureDetector(
-      onTap: () {
-        Navigator.pop(context);
-        context.push('/billing');
-      },
+      onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(
-            color: isBestValue
-                ? theme.colorScheme.primary
-                : theme.dividerTheme.color ?? Colors.grey,
-            width: isBestValue ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(16),
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: isPopular
+              ? Border.all(color: theme.colorScheme.primary, width: 2)
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (isBestValue)
+            if (isPopular)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(14),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(22),
+                    topRight: Radius.circular(22),
                   ),
                 ),
-                child: Text(
-                  'BEST VALUE',
-                  style: TextStyle(
-                    color: theme.colorScheme.onPrimary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1,
+                child: Center(
+                  child: Text(
+                    'BEST VALUE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(description, style: theme.textTheme.labelMedium),
+                        ],
                       ),
-                      Text(
-                        price,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                price,
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              Text(period, style: theme.textTheme.labelMedium),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
                   ...features.map(
-                    (f) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
+                    (feature) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(2),
+                            padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               color: PawThemeData.successGreen.withValues(
                                 alpha: 0.1,
@@ -300,9 +415,39 @@ class UpgradeModal extends StatelessWidget {
                               color: PawThemeData.successGreen,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(f, style: theme.textTheme.bodyMedium),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              feature,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
                         ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onTap,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isPopular
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.primary.withValues(alpha: 0.1),
+                        foregroundColor: isPopular
+                            ? Colors.white
+                            : theme.colorScheme.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        title == 'Pro Plan'
+                            ? 'Upgrade to Pro Plan'
+                            : 'Upgrade to Premium Plan',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
