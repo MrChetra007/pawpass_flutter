@@ -10,9 +10,7 @@ import '../../data/models/medication_model.dart';
 import '../../data/models/vet_record_model.dart';
 
 class PdfService {
-  static Future<pw.Document> generatePetIdCard({
-    required Pet pet,
-  }) async {
+  static Future<pw.Document> generatePetIdCard({required Pet pet}) async {
     final pdf = pw.Document();
     final dateFormat = DateFormat('MMM d, yyyy');
 
@@ -412,7 +410,10 @@ class PdfService {
                 ),
               ),
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: pw.BoxDecoration(
                   color: primaryColor,
                   borderRadius: pw.BorderRadius.circular(20),
@@ -459,7 +460,7 @@ class PdfService {
                   pw.SizedBox(height: 8),
                   pw.BarcodeWidget(
                     barcode: pw.Barcode.qrCode(),
-                    data: pet.id,
+                    data: pet.shareLink.isNotEmpty ? pet.shareLink : pet.id,
                     width: 80,
                     height: 80,
                   ),
@@ -480,17 +481,26 @@ class PdfService {
                     pw.SizedBox(height: 4),
                     pw.Text(
                       '${pet.species} ${pet.breed != null ? "• ${pet.breed}" : ""}',
-                      style: pw.TextStyle(fontSize: 14, color: PdfColors.grey700),
+                      style: pw.TextStyle(
+                        fontSize: 14,
+                        color: PdfColors.grey700,
+                      ),
                     ),
                     pw.SizedBox(height: 16),
                     _buildIdFieldCompact('Species', pet.species),
                     _buildIdFieldCompact('Breed', pet.breed ?? 'Unknown'),
                     _buildIdFieldCompact('Gender', pet.gender ?? 'Unknown'),
-                    _buildIdFieldCompact('Birthday', pet.dob != null ? dateFormat.format(pet.dob!) : 'Unknown'),
+                    _buildIdFieldCompact(
+                      'Birthday',
+                      pet.dob != null ? dateFormat.format(pet.dob!) : 'Unknown',
+                    ),
                     _buildIdFieldCompact('Age', pet.ageString),
-                    if (pet.color != null) _buildIdFieldCompact('Color', pet.color!),
-                    if (pet.microchip != null) _buildIdFieldCompact('Microchip', pet.microchip!),
-                    if (pet.weightKg != null) _buildIdFieldCompact('Weight', '${pet.weightKg} kg'),
+                    if (pet.color != null)
+                      _buildIdFieldCompact('Color', pet.color!),
+                    if (pet.microchip != null)
+                      _buildIdFieldCompact('Microchip', pet.microchip!),
+                    if (pet.weightKg != null)
+                      _buildIdFieldCompact('Weight', '${pet.weightKg} kg'),
                   ],
                 ),
               ),
@@ -1008,26 +1018,17 @@ class PdfService {
                 pw.SizedBox(height: 4),
                 pw.Text(
                   'Always up to date',
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    color: PdfColors.grey600,
-                  ),
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
                 ),
                 pw.SizedBox(height: 8),
                 pw.Text(
                   shareUrl,
-                  style: pw.TextStyle(
-                    fontSize: 8,
-                    color: PdfColors.grey400,
-                  ),
+                  style: pw.TextStyle(fontSize: 8, color: PdfColors.grey400),
                 ),
                 pw.SizedBox(height: 8),
                 pw.Text(
                   'Powered by PawPass',
-                  style: pw.TextStyle(
-                    fontSize: 8,
-                    color: PdfColors.grey400,
-                  ),
+                  style: pw.TextStyle(fontSize: 8, color: PdfColors.grey400),
                 ),
               ],
             ),

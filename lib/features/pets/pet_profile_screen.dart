@@ -16,11 +16,13 @@ import '../../shared/widgets/paw_card.dart';
 import '../../core/utils/feature_gate.dart';
 import '../../core/services/pdf_service.dart';
 import '../../core/services/sharing_service.dart';
+import '../../core/services/id_card_service.dart';
 import '../../core/theme/app_theme_data.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/medications/medications_list_screen.dart';
 import '../../features/weight/weight_history_screen.dart';
 import '../../features/billing/billing_screen.dart';
+import '../../shared/widgets/pet_id_card_widget.dart';
 import 'add_edit_pet_screen.dart';
 
 class _TailPainter extends CustomPainter {
@@ -50,6 +52,7 @@ class _TailPainter extends CustomPainter {
 
 class PetProfileScreen extends ConsumerWidget {
   final String petId;
+  static final GlobalKey idCardKey = GlobalKey();
 
   const PetProfileScreen({super.key, required this.petId});
 
@@ -1215,7 +1218,7 @@ class PetProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
+);
   }
 
   Future<void> _exportPdf(BuildContext context, WidgetRef ref, Pet pet) async {
@@ -1227,27 +1230,33 @@ class PetProfileScreen extends ConsumerWidget {
 
     if (!hasAccess) return;
 
-    try {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Generating ID Card...')));
-
-      final pdf = await PdfService.generatePetIdCard(pet: pet);
-
-      if (context.mounted) {
-        await PdfService.printOrSavePdf(
-          context,
-          pdf,
-          '${pet.name}_id_card.pdf',
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
-      }
-    }
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        insetPadding: const EdgeInsets.all(16),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width,
+          child: PetIdCardWidget(pet: pet, cardKey: idCardKey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await IdCardService.shareCard(
+                cardKey: idCardKey,
+                petName: pet.name,
+              );
+            },
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatGender(String? gender) {
