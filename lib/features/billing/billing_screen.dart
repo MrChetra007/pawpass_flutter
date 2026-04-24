@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/services/iap_service.dart';
 import '../../core/theme/app_theme_data.dart';
 import '../../shared/providers/user_provider.dart';
+
+final iapServiceProvider = Provider<IAPService>((ref) => IAPService());
 
 class BillingScreen extends ConsumerStatefulWidget {
   const BillingScreen({super.key});
@@ -469,7 +472,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: _restorePurchases,
+              onPressed: restorePurchases,
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -582,6 +585,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
 
   void _showUpgradeDialog(String plan) {
     final theme = Theme.of(context);
+    final iapService = ref.read(iapServiceProvider);
 
     showModalBottomSheet(
       context: context,
@@ -609,20 +613,14 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
             ),
             const SizedBox(height: 20),
             Text(
-              'Switch to ${plan == "pro" ? "Paw Plan" : "Family Plan"}',
+              'Upgrade to ${plan == "pro" ? "Pro Plan" : "Premium Plan"}',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-            Text(
-              'For testing purposes, you can switch plans directly. In production, this would go through in-app purchase.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.textTheme.labelLarge?.color,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            _buildPriceDescription(plan),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -641,14 +639,14 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => _switchPlan(plan),
+                    onPressed: () => _purchasePlan(plan),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text('Switch Plan'),
+                    child: const Text('Subscribe'),
                   ),
                 ),
               ],
@@ -659,68 +657,58 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
     );
   }
 
-  Future<void> _switchPlan(String plan) async {
+  Widget _buildPriceDescription(String plan) {
     final theme = Theme.of(context);
+    final iapService = ref.read(iapServiceProvider);
+    final productId = plan == 'pro' ? 'pawpass_pro' : 'pawpass_premium';
+    final product = iapService.getProductDetails(productId);
+
+    final price = product?.price ?? (plan == 'pro' ? '\$4.99' : '\$9.99');
+    final description = plan == 'pro'
+        ? '$price/month - Perfect for single pet owners'
+        : '$price/month - Best value for multiple pets';
+
+    return Text(
+      description,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.textTheme.labelLarge?.color,
+      ),
+      textAlign: TextAlign.center,
+    );
+  }
+
+  Future<void> _purchasePlan(String plan) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final screenContext = context;
+    final iapService = ref.read(iapServiceProvider);
+    final productId = plan == 'pro' ? 'pawpass_pro' : 'pawpass_premium';
 
     Navigator.pop(context);
 
-    await Future.delayed(const Duration(milliseconds: 200));
-
     scaffoldMessenger.showSnackBar(
       SnackBar(
-        content: const Text('Switching plan...'),
+        content: const Text('Processing purchase...'),
         duration: const Duration(seconds: 1),
       ),
     );
 
-    try {
-      final supabase = Supabase.instance.client;
-      final user = supabase.auth.currentUser;
-
-      if (user != null) {
-        await supabase.from('users').update({'plan': plan}).eq('id', user.id);
-
-        await Future.delayed(const Duration(milliseconds: 100));
-        ref.invalidate(userProvider);
-        ref.invalidate(subscriptionProvider);
-
-        scaffoldMessenger.hideCurrentSnackBar();
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              'Successfully switched to ${plan == "pro" ? "Paw Plan" : "Family Plan"}!',
-            ),
-            backgroundColor: PawThemeData.successGreen,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      } else {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: const Text('User not authenticated'),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
-      }
+try {
+      await iapService.buyProduct(productId);
+      ref.invalidate(userProvider);
+      ref.invalidate(subscriptionProvider);
     } catch (e) {
-      scaffoldMessenger.hideCurrentSnackBar();
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('Error switching plan: $e'),
-          backgroundColor: theme.colorScheme.error,
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
-  Future<void> _restorePurchases() async {
+  Future<void> restorePurchases() async {
     final theme = Theme.of(context);
+    final iapService = ref.read(iapServiceProvider);
 
     showDialog(
       context: context,
@@ -728,20 +716,34 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No previous purchases found'),
-          backgroundColor: theme.colorScheme.primary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+    try {
+      await iapService.restorePurchases();
+      if (mounted) {
+        Navigator.pop(context);
+        ref.invalidate(userProvider);
+        ref.invalidate(subscriptionProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Purchases restored successfully!'),
+            backgroundColor: PawThemeData.successGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-        ),
-      );
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error restoring: ${e.toString()}'),
+            backgroundColor: theme.colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

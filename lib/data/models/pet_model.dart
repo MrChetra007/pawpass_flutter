@@ -15,6 +15,10 @@ class Pet {
   final bool isActive;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final String? shareToken;
+  final bool isSharingEnabled;
+
+  static const String shareBaseUrl = 'https://pawpass.vercel.app/pet';
 
   Pet({
     required this.id,
@@ -33,6 +37,8 @@ class Pet {
     this.isActive = true,
     required this.createdAt,
     this.updatedAt,
+    this.shareToken,
+    this.isSharingEnabled = false,
   });
 
   factory Pet.fromJson(Map<String, dynamic> json) {
@@ -53,6 +59,8 @@ class Pet {
       isActive: json['is_active'] as bool? ?? true,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      shareToken: json['share_token'] as String?,
+      isSharingEnabled: json['is_sharing_enabled'] as bool? ?? false,
     );
   }
 
@@ -74,6 +82,8 @@ class Pet {
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
+      if (shareToken != null) 'share_token': shareToken,
+      'is_sharing_enabled': isSharingEnabled,
     };
   }
 
@@ -94,6 +104,8 @@ class Pet {
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? shareToken,
+    bool? isSharingEnabled,
   }) {
     return Pet(
       id: id ?? this.id,
@@ -112,7 +124,14 @@ class Pet {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      shareToken: shareToken ?? this.shareToken,
+      isSharingEnabled: isSharingEnabled ?? this.isSharingEnabled,
     );
+  }
+
+  String get shareLink {
+    if (shareToken == null || shareToken!.isEmpty) return '';
+    return '$shareBaseUrl?token=$shareToken';
   }
 
   String get ageString {

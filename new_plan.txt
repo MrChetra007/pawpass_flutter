@@ -1,0 +1,260 @@
+1. SUPABASE SCHEMA CHANGES
+Add the following columns to the existing pets table:
+sqlALTER TABLE pets 
+ADD COLUMN share_token UUID DEFAULT gen_random_uuid(),
+ADD COLUMN is_sharing_enabled BOOLEAN DEFAULT false;
+Create an index for fast token lookup:
+sqlCREATE INDEX idx_pets_share_token ON pets(share_token);
+Update Row Level Security to allow anonymous read when sharing is enabled:
+sqlCREATE POLICY "Allow public read via share token"
+ON pets
+FOR SELECT
+TO anon
+USING (is_sharing_enabled = true);
+
+CREATE POLICY "Allow public read of vaccines via share token"
+ON vaccines
+FOR SELECT
+TO anon
+USING (
+  EXISTS (
+    SELECT 1 FROM pets
+    WHERE pets.id = vaccines.pet_id
+    AND pets.is_sharing_enabled = true
+  )
+);
+
+CREATE POLICY "Allow public read of medications via share token"
+ON medications
+FOR SELECT
+TO anon
+USING (
+  EXISTS (
+    SELECT 1 FROM pets
+    WHERE pets.id = medications.pet_id
+    AND pets.is_sharing_enabled = true
+  )
+);
+
+CREATE POLICY "Allow public read of vet_records via share token"
+ON vet_records
+FOR SELECT
+TO anon
+USING (
+  EXISTS (
+    SELECT 1 FROM pets
+    WHERE pets.id = vet_records.pet_id
+    AND pets.is_sharing_enabled = true
+  )
+);
+
+CREATE POLICY "Allow public read of weight entries via share token"
+ON weight_entries
+FOR SELECT
+TO anon
+USING (
+  EXISTS (
+    SELECT 1 FROM pets
+    WHERE pets.id = weight_entries.pet_id
+    AND pets.is_sharing_enabled = true
+  )
+);
+
+2. FLUTTER — UPDATE PET MODEL
+Update the Pet model class to include the new fields:
+dart// Add to Pet model:
+final String? shareToken;
+final bool isSharingEnabled;
+
+// The share link is constructed as:
+String get shareLink => 'https://pawpass.vercel.app/pet?token=$shareToken';
+Update fromJson and toJson accordingly.
+
+3. FLUTTER — SHARING SERVICE
+Create a new file lib/services/sharing_service.dart:
+dart// This service handles:
+// 1. Enabling/disabling sharing for a pet
+// 2. Regenerating the share token (revoke old link)
+// 3. Returning the full share URL
+
+class SharingService {
+  // enableSharing(petId) → sets is_sharing_enabled = true in Supabase
+  // disableSharing(petId) → sets is_sharing_enabled = false
+  // regenerateToken(petId) → generates new UUID, invalidates old link
+  // getShareUrl(shareToken) → returns 'https://pawpass.vercel.app/pet?token=$shareToken'
+}
+
+4. FLUTTER — PET PROFILE SCREEN CHANGES
+On the Pet Profile screen (/pets/:id), add a Share Passport section. It should contain:
+UI Elements:
+
+A toggle switch labeled "Share Passport" (calls enableSharing / disableSharing)
+When enabled, show:
+
+A QR code widget displaying the share URL (use qr_flutter package)
+The share URL as selectable text
+A "Copy Link" button (copies URL to clipboard, shows snackbar)
+A "Share" button (uses share_plus package to share via system sheet)
+A "Regenerate Link" button (with confirmation dialog warning the old link will stop working)
+
+
+Lock this section behind premium check — show upgrade prompt if user is on free plan
+
+Packages needed:
+yamlqr_flutter: ^4.1.0
+share_plus: ^7.0.0
+QR Code widget:
+dartQrImageView(
+  data: pet.shareLink,
+  version: QrVersions.auto,
+  size: 200.0,
+  backgroundColor: Colors.white,
+)
+
+5. FLUTTER — PDF PASSPORT CHANGES
+Update PdfService in pdf_service.dart to include the QR code and share link at the bottom of the first page, before the footer.
+Add a new section in generatePetPassport():
+dart// After health records section, before footer:
+if (pet.isSharingEnabled && pet.shareToken != null) {
+  _buildShareSection(pet, primaryColor)
+}
+Build the _buildShareSection widget:
+
+A row with two columns
+Left column: QR code image (use qr package for PDF — pw.BarcodeWidget with Barcode.qrCode())
+Right column:
+
+Title: "Scan to view live passport"
+Subtitle: "Always up to date"
+The share URL in small grey text
+Small PawPass branding
+
+
+
+dart// QR code in PDF using pw.BarcodeWidget:
+pw.BarcodeWidget(
+  barcode: pw.Barcode.qrCode(),
+  data: pet.shareLink,
+  width: 80,
+  height: 80,
+)
+Also update the ID card barcode in _buildBarcode():
+
+Replace the hardcoded decorative barcode with a real pw.BarcodeWidget
+Use Barcode.code128() with the pet's ID as data:
+
+dartpw.BarcodeWidget(
+  barcode: pw.Barcode.code128(),
+  data: pet.id,
+  width: 140,
+  height: 40,
+  drawText: false,
+)
+
+6. HTML WEB PAGE — /pet?token=xxx
+Create a single file index.html to be deployed on Vercel. This is a fully standalone file with no framework — just HTML, CSS, and vanilla JS.
+File structure:
+/vercel-project
+  └── index.html
+  └── vercel.json
+vercel.json:
+json{
+  "rewrites": [{ "source": "/pet", "destination": "/index.html" }]
+}
+index.html must:
+
+Read token from URL params:
+
+javascriptconst token = new URLSearchParams(window.location.search).get('token')
+
+Query Supabase using the anon public key:
+
+javascriptconst SUPABASE_URL = 'https://your-project.supabase.co'
+const SUPABASE_ANON_KEY = 'your-anon-key'
+
+// Use Supabase JS CDN:
+// <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+const { data: pet } = await supabase
+  .from('pets')
+  .select(`
+    *,
+    vaccines(*),
+    medications(*),
+    vet_records(*),
+    weight_entries(*)
+  `)
+  .eq('share_token', token)
+  .eq('is_sharing_enabled', true)
+  .single()
+
+Handle error state — if no pet found or sharing disabled:
+
+html<!-- Show a friendly "This passport is no longer available" page -->
+
+Render a beautiful read-only passport page with these sections:
+
+
+Header: PawPass branding + "Pet Passport" title
+Pet ID Card: Photo, name, species, breed, birthday, gender, color
+Vaccines: List with status badges (Up to date / Due Soon / Overdue) colored green/yellow/red
+Current Medications: Active medications with dosage details
+Weight History: Simple chart using Chart.js CDN
+Health Records: Last 10 records
+Footer: "Powered by PawPass" + link to download the app
+
+
+Design requirements:
+
+
+Mobile-first responsive design
+Color scheme matches the app: primary #2563EB, success #10B981, warning #F59E0B, danger #EF4444
+Clean card-based layout with subtle shadows
+Show a "🔒 Read-only view" badge in the header so viewers know they can't edit
+Show the date this page was last updated
+No login required to view
+
+
+7. PREMIUM GATE IN FLUTTER
+The sharing feature is premium only. In the pet profile screen, wrap the share section with a premium check:
+dartif (userPlan == 'free') {
+  // Show a locked card with:
+  // - Lock icon
+  // - "Share your pet's passport — Upgrade to Pro"
+  // - Upgrade button → navigate to /billing
+} else {
+  // Show full sharing UI
+}
+
+8. COMPLETE FLOW SUMMARY
+User enables sharing on Pet Profile
+        |
+        v
+Supabase sets is_sharing_enabled = true
+        |
+        v
+App shows QR code + copy link button
+        |
+        ├──> PDF Export includes QR code in passport
+        |
+        └──> Vet / Pet Sitter scans QR or opens link
+                        |
+                        v
+              pawpass.vercel.app/pet?token=xxx
+                        |
+                        v
+              Supabase anon query (RLS protected)
+                        |
+                        v
+              Beautiful read-only passport page
+                        |
+                        v
+              Owner revokes → regenerate token
+              → old link returns "not available"
+
+Important Notes
+
+Never expose the real pet UUID in the URL — always use share_token
+The anon Supabase key is safe to use in the HTML file — RLS policies protect the data
+Test RLS policies thoroughly before deploying
+The web page should work perfectly on mobile since vets/sitters will open it on their phone

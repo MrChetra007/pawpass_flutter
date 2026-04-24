@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/pet", "destination": "/shared_passport.html" }
+  ]
+}

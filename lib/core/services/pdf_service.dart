@@ -70,6 +70,10 @@ class PdfService {
             pw.SizedBox(height: 12),
             ...records.take(10).map((r) => _buildRecordItem(r, dateFormat)),
           ],
+          if (pet.isSharingEnabled && pet.shareLink.isNotEmpty) ...[
+            pw.SizedBox(height: 30),
+            _buildShareSection(pet, primaryColor),
+          ],
           pw.SizedBox(height: 30),
           _buildFooter(),
         ],
@@ -794,6 +798,68 @@ class PdfService {
               maxLines: 2,
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildShareSection(Pet pet, PdfColor primaryColor) {
+    final shareUrl = pet.shareLink;
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300),
+        borderRadius: pw.BorderRadius.circular(8),
+      ),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'Scan to view live passport',
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  'Always up to date',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+                pw.SizedBox(height: 8),
+                pw.Text(
+                  shareUrl,
+                  style: pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey400,
+                  ),
+                ),
+                pw.SizedBox(height: 8),
+                pw.Text(
+                  'Powered by PawPass',
+                  style: pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(width: 16),
+          pw.BarcodeWidget(
+            barcode: pw.Barcode.qrCode(),
+            data: shareUrl,
+            width: 80,
+            height: 80,
+          ),
         ],
       ),
     );

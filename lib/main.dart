@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/router/app_router.dart';
+import 'core/services/iap_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme_builder.dart';
 import 'core/theme/app_theme_data.dart';
@@ -31,6 +32,7 @@ Future<void> main() async {
 
   initGoogleSignIn();
 
+  await IAPService().initialize();
   await NotificationService().initialize();
   await _requestNotificationPermission();
 

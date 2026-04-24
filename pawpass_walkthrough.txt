@@ -1,0 +1,289 @@
+==========================================
+PAWPASS APP WALKTHROUGH FLOW
+==========================================
+
+------------------------------------------
+1. AUTHENTICATION FLOW
+------------------------------------------
+
+1.1 LANDING PAGE (/)
+    |
+    v
+    [Get Started] --> 1.2 LOGIN SCREEN (/login)
+    |                       |
+    v                       v
+    [Sign Up] -----> 1.3 REGISTER SCREEN (/register)
+                            |
+                            v
+                    [Forgot Password?] --> 1.4 FORGOT PASSWORD (/forgot-password)
+
+    After successful login/register:
+    |
+    v
+    1.5 ONBOARDING (/onboarding)
+    - Add your first pet
+    - Set up notifications
+    - Complete onboarding
+    |
+    v
+    MAIN APP (/home)
+
+
+------------------------------------------
+2. MAIN APP STRUCTURE
+------------------------------------------
+
+Bottom Navigation Bar with 5 tabs:
+[Home] | [Pets] | [Records] | [Appts] | [Profile]
+
+
+------------------------------------------
+2.1 HOME / DASHBOARD (/home)
+------------------------------------------
+
+Dashboard showing:
+- Quick Stats (total pets, upcoming appointments, overdue vaccines)
+- Upcoming Appointments widget
+- Recent Activity feed
+- Quick action buttons
+
+Navigation from Dashboard:
+- Tap appointment --> Appointment details
+- Tap "View All" --> respective list screens
+
+
+------------------------------------------
+2.2 PETS SECTION (/pets)
+------------------------------------------
+
+2.2.1 PET LIST SCREEN (/pets)
+    - Grid/List view of all pets
+    - Add new pet FAB button
+    - Search/filter pets
+    |
+    v
+    2.2.2 PET PROFILE SCREEN (/pets/:id)
+    
+    Pet Info Card showing:
+    - Photo, Name, Species, Breed
+    - Age, Weight, Gender
+    - Details: Color, Neutered, Microchip, Birthday
+    
+    Health Summary Cards:
+    - Vaccines card (tail style) --> Vaccines List
+    - Medications card (tail style) --> Medications List
+    - Weight card --> Weight History
+    
+    Quick Actions:
+    - Export Passport (PDF)
+    
+    Danger Zone:
+    - Delete Pet
+    
+    Navigation from Pet Profile:
+    - Edit button --> Add/Edit Pet Screen
+    - Vaccines card --> Vaccines List Screen (filtered by pet)
+    - Medications card --> Medications List Screen (filtered by pet)
+    - Weight card --> Weight History Screen
+    - Export Passport --> Generate PDF with all health records
+
+    2.2.3 ADD/EDIT PET SCREEN
+    - Form fields: Name, Species, Breed, Gender, DOB, Weight, Color
+    - Neutered toggle
+    - Microchip number
+    - Photo upload
+    - Notes
+    - Save/Cancel buttons
+
+
+------------------------------------------
+2.3 RECORDS SECTION (/records)
+------------------------------------------
+
+2.3.1 RECORDS LIST SCREEN (/records)
+    - List of all vet records
+    - Filter by pet
+    - Filter by type (Checkup, Surgery, Emergency, etc.)
+    - Add new record FAB
+    |
+    v
+    2.3.2 ADD/EDIT RECORD SCREEN
+    
+    Form fields:
+    - Title
+    - Pet selection
+    - Date
+    - Type (Checkup, Surgery, Emergency, Dental, Grooming, Other)
+    - Vet/Clinic name
+    - Cost
+    - Notes
+    - Attachments (photos)
+
+
+------------------------------------------
+2.4 APPOINTMENTS SECTION (/appointments)
+------------------------------------------
+
+2.4.1 APPOINTMENTS SCREEN (/appointments)
+    - Calendar view
+    - List view (upcoming appointments)
+    - Add new appointment FAB
+    |
+    v
+    2.4.2 ADD/EDIT APPOINTMENT SCREEN
+    
+    Form fields:
+    - Title
+    - Pet selection
+    - Date & Time
+    - Location/Address
+    - Vet name
+    - Notes
+    - Reminder settings
+
+
+------------------------------------------
+2.5 VACCINES SECTION
+------------------------------------------
+
+Accessed from Pet Profile --> Vaccines card
+
+2.5.1 VACCINES LIST SCREEN (/vaccines)
+    - List of all vaccines for selected pet
+    - Status indicators (Up to date, Due soon, Overdue)
+    - Add new vaccine FAB
+    |
+    v
+    2.5.2 ADD/EDIT VACCINE SCREEN
+    
+    Form fields:
+    - Vaccine name
+    - Date given
+    - Next due date
+    - Vet name
+    - Clinic name
+    - Batch number (optional)
+    - Notes
+
+
+------------------------------------------
+2.6 MEDICATIONS SECTION
+------------------------------------------
+
+Accessed from Pet Profile --> Medications card
+
+2.6.1 MEDICATIONS LIST SCREEN (/medications)
+    - List of all medications for selected pet
+    - Active/Inactive toggle
+    - Add new medication FAB
+    |
+    v
+    2.6.2 ADD/EDIT MEDICATION SCREEN
+    
+    Form fields:
+    - Medication name
+    - Dosage
+    - Frequency (Daily, Weekly, Monthly, As needed, Custom)
+    - Frequency type (times per day/week)
+    - Times per day
+    - Time of day (Morning, Afternoon, Evening, Night)
+    - Meal timing (Before meal, With meal, After meal)
+    - Start date
+    - End date (optional)
+    - Prescribed by
+    - Notes
+
+
+------------------------------------------
+2.7 WEIGHT SECTION
+------------------------------------------
+
+Accessed from Pet Profile --> Weight card
+
+2.7.1 WEIGHT HISTORY SCREEN (/weight/:petId)
+    - Weight chart/graph
+    - Weight history list
+    - Add new weight entry FAB
+    |
+    v
+    2.7.2 ADD WEIGHT ENTRY
+    - Weight value (kg)
+    - Date
+
+
+------------------------------------------
+2.8 PROFILE SECTION (/profile)
+------------------------------------------
+
+2.8.1 PROFILE SCREEN (/profile)
+
+    Profile Card:
+    - Avatar (tap to edit)
+    - Full name
+    - Email
+    - Plan badge (Free/Pro/Premium)
+    
+    APP SETTINGS Card:
+    - App Theme --> Theme Picker Screen
+    - Notifications --> Test Notifications Screen
+    - Weight Units
+    
+    SUBSCRIPTION Card:
+    - Your Plan --> Billing Screen (/billing)
+    
+    SUPPORT & LEGAL Card:
+    - Help & FAQ --> Help FAQ Screen
+    - Privacy Policy --> Privacy Policy Screen
+    - Terms of Service --> Terms Screen
+    - Rate PawPass --> Opens app store
+    
+    ACCOUNT Card:
+    - Sign Out
+    - Delete Account
+
+
+------------------------------------------
+3. SUBSCRIPTION / BILLING
+------------------------------------------
+
+3.1 BILLING SCREEN (/billing)
+    - Current plan display
+    - Plan comparison
+    - Upgrade options
+    - Restore Purchases
+    - Manage Subscription
+    - Payment history
+
+
+------------------------------------------
+4. PDF EXPORT FEATURE
+------------------------------------------
+
+From Pet Profile --> Export Passport:
+- Generates PDF passport with:
+  - Pet Identification Card (with photo)
+  - Vaccinations list
+  - Current medications
+  - Health records
+- Can print or save PDF
+
+
+------------------------------------------
+5. NOTIFICATIONS
+------------------------------------------
+
+App sends reminders for:
+- Upcoming appointments
+- Vaccine due dates
+- Medication times
+- Custom reminders
+
+Notification types:
+- Appointment reminders
+- Vaccine due reminders
+- Medication reminders (based on time of day settings)
+
+
+==========================================
+END OF WALKTHROUGH
+==========================================

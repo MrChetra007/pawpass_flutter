@@ -488,8 +488,133 @@ CREATE POLICY "Users can delete own family members"
 ON family_members FOR DELETE
 USING (auth.uid() = owner_id);
 
-alter table public.medications 
-add column if not exists meal_timing text check (meal_timing in ('before_meal', 'after_meal', 'with_meal', 'any')) default 'any',
-add column if not exists frequency_type text check (frequency_type in ('daily', 'weekly', 'monthly')) default 'daily',
-add column if not exists frequency_times integer default 1,
-add column if not exists time_of_day text[] default '{}';
+-- ============================================================
+-- 10. PET SHARING
+-- ============================================================
+
+alter table public.pets 
+add column if not exists share_token uuid default gen_random_uuid(),
+add column if not exists is_sharing_enabled boolean default false;
+
+create index if not exists idx_pets_share_token on public.pets(share_token);
+
+drop policy if exists "Allow public read via share token" on pets;
+create policy "Allow public read via share token"
+on pets
+for select
+to anon
+using (is_sharing_enabled = true);
+
+drop policy if exists "Allow public read of vaccines via share token" on vaccines;
+create policy "Allow public read of vaccines via share token"
+on vaccines
+for select
+to anon
+using (
+  exists (
+    select 1 from public.pets
+    where public.pets.id = vaccines.pet_id
+    and public.pets.is_sharing_enabled = true
+  )
+);
+
+drop policy if exists "Allow public read of medications via share token" on medications;
+create policy "Allow public read of medications via share token"
+on medications
+for select
+to anon
+using (
+  exists (
+    select 1 from public.pets
+    where public.pets.id = medications.pet_id
+    and public.pets.is_sharing_enabled = true
+  )
+);
+
+drop policy if exists "Allow public read of vet_records via share token" on vet_records;
+create policy "Allow public read of vet_records via share token"
+on vet_records
+for select
+to anon
+using (
+  exists (
+    select 1 from public.pets
+    where public.pets.id = vet_records.pet_id
+    and public.pets.is_sharing_enabled = true
+  )
+);
+
+drop policy if exists "Allow public read of weight_logs via share token" on weight_logs;
+create policy "Allow public read of weight_logs via share token"
+on weight_logs
+for select
+to anon
+using (
+  exists (
+    select 1 from public.pets
+    where public.pets.id = weight_logs.pet_id
+    and public.pets.is_sharing_enabled = true
+  )
+);
+
+
+-- Pet sharing
+
+ALTER TABLE pets 
+ADD COLUMN share_token UUID DEFAULT gen_random_uuid(),
+ADD COLUMN is_sharing_enabled BOOLEAN DEFAULT false;
+CREATE INDEX idx_pets_share_token ON pets(share_token);
+
+CREATE POLICY "Allow public read via share token"
+ON pets
+FOR SELECT
+TO anon
+USING (is_sharing_enabled = true);
+
+CREATE POLICY "Allow public read of vaccines via share token"
+ON vaccines
+FOR SELECT
+TO anon
+USING (
+  EXISTS (
+    SELECT 1 FROM pets
+    WHERE pets.id = vaccines.pet_id
+    AND pets.is_sharing_enabled = true
+  )
+);
+
+CREATE POLICY "Allow public read of medications via share token"
+ON medications
+FOR SELECT
+TO anon
+USING (
+  EXISTS (
+    SELECT 1 FROM pets
+    WHERE pets.id = medications.pet_id
+    AND pets.is_sharing_enabled = true
+  )
+);
+
+CREATE POLICY "Allow public read of vet_records via share token"
+ON vet_records
+FOR SELECT
+TO anon
+USING (
+  EXISTS (
+    SELECT 1 FROM pets
+    WHERE pets.id = vet_records.pet_id
+    AND pets.is_sharing_enabled = true
+  )
+);
+
+CREATE POLICY "Allow public read of weight_logs via share token"
+ON weight_logs
+FOR SELECT
+TO anon
+USING (
+  EXISTS (
+    SELECT 1 FROM pets
+    WHERE pets.id = weight_logs.pet_id
+    AND pets.is_sharing_enabled = true
+  )
+);

@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/pet_model.dart';
 import '../../data/models/vaccine_model.dart';
 import '../../shared/providers/pet_provider.dart';
 import '../../shared/providers/vaccine_provider.dart';
 import '../../shared/providers/medication_provider.dart';
 import '../../shared/providers/record_provider.dart';
+import '../../shared/providers/user_provider.dart';
 import '../../shared/widgets/paw_card.dart';
 import '../../core/utils/feature_gate.dart';
 import '../../core/services/pdf_service.dart';
+import '../../core/services/sharing_service.dart';
 import '../../core/theme/app_theme_data.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/medications/medications_list_screen.dart';
 import '../../features/weight/weight_history_screen.dart';
+import '../../features/billing/billing_screen.dart';
 import 'add_edit_pet_screen.dart';
 
 class _TailPainter extends CustomPainter {
@@ -88,6 +95,8 @@ class PetProfileScreen extends ConsumerWidget {
                         _buildNotesSection(context, pet),
                         const SizedBox(height: 24),
                       ],
+                      _buildShareSection(context, ref, pet),
+                      const SizedBox(height: 24),
                       _buildDangerZone(context, ref, pet),
                       const SizedBox(height: 32),
                     ],
@@ -797,6 +806,312 @@ class PetProfileScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildShareSection(BuildContext context, WidgetRef ref, Pet pet) {
+    final theme = Theme.of(context);
+    final userAsync = ref.watch(userProvider);
+
+    return userAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (user) {
+        if (user == null || user.plan == 'free') {
+          return _buildUpgradePrompt(context);
+        }
+        return _buildShareCard(context, ref, pet);
+      },
+    );
+  }
+
+  Widget _buildUpgradePrompt(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.lock_outline,
+                  color: theme.colorScheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Share Passport',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Upgrade to share your pet\'s passport',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.textTheme.labelLarge?.color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => context.push('/billing'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text('Upgrade to Pro'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShareCard(BuildContext context, WidgetRef ref, Pet pet) {
+    final theme = Theme.of(context);
+    final shareUrl = pet.shareLink;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.share,
+                  color: theme.colorScheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Share Passport',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Switch(
+                value: pet.isSharingEnabled,
+                onChanged: (value) => _toggleSharing(context, ref, pet, value),
+              ),
+            ],
+          ),
+          if (pet.isSharingEnabled && shareUrl.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Center(
+              child: QrImageView(
+                data: shareUrl,
+                version: QrVersions.auto,
+                size: 150,
+                backgroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                shareUrl,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFamily: 'monospace',
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _copyLink(context, shareUrl),
+                    icon: const Icon(Icons.copy, size: 18),
+                    label: const Text('Copy'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _shareLink(context, shareUrl, pet.name),
+                    icon: const Icon(Icons.share, size: 18),
+                    label: const Text('Share'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () => _regenerateLink(context, ref, pet),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Regenerate Link'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.orange,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _toggleSharing(
+      BuildContext context, WidgetRef ref, Pet pet, bool enabled) async {
+    final theme = Theme.of(context);
+    final sharingService = SharingService();
+    try {
+      if (enabled) {
+        await sharingService.enableSharing(pet.id);
+      } else {
+        await sharingService.disableSharing(pet.id);
+      }
+      ref.invalidate(petNotifierProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(enabled
+                ? 'Sharing enabled'
+                : 'Sharing disabled'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: theme.colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _copyLink(BuildContext context, String url) {
+    Clipboard.setData(ClipboardData(text: url));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Link copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _shareLink(BuildContext context, String url, String petName) {
+    Share.share(
+      'Check out $petName\'s PawPass passport: $url',
+      subject: '$petName\'s Pet Passport',
+    );
+  }
+
+  Future<void> _regenerateLink(
+      BuildContext context, WidgetRef ref, Pet pet) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Regenerate Link?'),
+        content: const Text(
+          'This will invalidate the current share link. Anyone using the old link will no longer be able to view the passport.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Regenerate'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final sharingService = SharingService();
+      await sharingService.regenerateToken(pet.id);
+      ref.invalidate(petNotifierProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Link regenerated'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildDangerZone(BuildContext context, WidgetRef ref, Pet pet) {
