@@ -405,7 +405,6 @@ class PetProfileScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final vaccinesAsync = ref.watch(vaccineNotifierProvider);
     final medicationsAsync = ref.watch(medicationNotifierProvider);
-    final recordsAsync = ref.watch(recordNotifierProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,140 +421,59 @@ class PetProfileScreen extends ConsumerWidget {
             Expanded(
               child: vaccinesAsync.when(
                 data: (vaccines) {
-                  final petVaccines = vaccines
-                      .where((v) => v.petId == pet.id)
-                      .toList();
-                  final overdue = petVaccines
-                      .where((v) => v.status == VaccineStatus.overdue)
-                      .length;
-                  final dueSoon = petVaccines
-                      .where((v) => v.status == VaccineStatus.dueSoon)
-                      .length;
-
-                  Color statusColor;
-                  String statusText;
-                  if (overdue > 0) {
-                    statusColor = Colors.red;
-                    statusText = '$overdue overdue';
-                  } else if (dueSoon > 0) {
-                    statusColor = Colors.orange;
-                    statusText = '$dueSoon due soon';
-                  } else {
-                    statusColor = PawThemeData.successGreen;
-                    statusText = 'Up to date';
-                  }
-
-                  return _buildHealthCard(
-                    context,
-                    icon: Icons.vaccines,
-                    title: 'Vaccines',
-                    count: petVaccines.length,
-                    status: statusText,
-                    statusColor: statusColor,
-                    hasTail: true,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            VaccinesListScreen(initialPetId: pet.id),
-                      ),
-                    ),
-                  );
+                  final petVaccines = vaccines.where((v) => v.petId == pet.id).toList();
+                  final overdue = petVaccines.where((v) => v.status == VaccineStatus.overdue).length;
+                  final dueSoon = petVaccines.where((v) => v.status == VaccineStatus.dueSoon).length;
+                  Color statusColor; String statusText;
+                  if (overdue > 0) { statusColor = Colors.red; statusText = '$overdue'; }
+                  else if (dueSoon > 0) { statusColor = Colors.orange; statusText = '$dueSoon'; }
+                  else { statusColor = PawThemeData.successGreen; statusText = 'OK'; }
+                  return _buildMiniHealthCard(icon: Icons.vaccines, title: 'Vaccines', value: '${petVaccines.length}', status: statusText, statusColor: statusColor, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => VaccinesListScreen(initialPetId: pet.id))));
                 },
-                loading: () => _buildHealthCard(
-                  context,
-                  icon: Icons.vaccines,
-                  title: 'Vaccines',
-                  count: 0,
-                  status: 'Loading...',
-                  statusColor: Colors.grey,
-                  onTap: () {},
-                ),
-                error: (_, __) => _buildHealthCard(
-                  context,
-                  icon: Icons.vaccines,
-                  title: 'Vaccines',
-                  count: 0,
-                  status: 'Error',
-                  statusColor: Colors.red,
-                  onTap: () {},
-                ),
+                loading: () => _buildMiniHealthCard(icon: Icons.vaccines, title: 'Vaccines', value: '-', status: '...', statusColor: Colors.grey, onTap: () {}),
+                error: (_, __) => _buildMiniHealthCard(icon: Icons.vaccines, title: 'Vaccines', value: '!', status: 'Error', statusColor: Colors.red, onTap: () {}),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: medicationsAsync.when(
                 data: (medications) {
-                  final activeMeds = medications
-                      .where((m) => m.petId == pet.id && m.isActive)
-                      .length;
-
-                  return _buildHealthCard(
-                    context,
-                    icon: Icons.medication,
-                    title: 'Medications',
-                    count: activeMeds,
-                    status: activeMeds > 0 ? 'Active' : 'None',
-                    statusColor: activeMeds > 0
-                        ? theme.colorScheme.primary
-                        : PawThemeData.successGreen,
-                    hasTail: true,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            MedicationsListScreen(initialPetId: pet.id),
-                      ),
-                    ),
-                  );
+                  final activeMeds = medications.where((m) => m.petId == pet.id && m.isActive).length;
+                  return _buildMiniHealthCard(icon: Icons.medication, title: 'Meds', value: '$activeMeds', status: activeMeds > 0 ? 'Active' : 'None', statusColor: activeMeds > 0 ? theme.colorScheme.primary : PawThemeData.successGreen, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MedicationsListScreen(initialPetId: pet.id))));
                 },
-                loading: () => _buildHealthCard(
-                  context,
-                  icon: Icons.medication,
-                  title: 'Medications',
-                  count: 0,
-                  status: 'Loading...',
-                  statusColor: Colors.grey,
-                  onTap: () {},
-                ),
-                error: (_, __) => _buildHealthCard(
-                  context,
-                  icon: Icons.medication,
-                  title: 'Medications',
-                  count: 0,
-                  status: 'Error',
-                  statusColor: Colors.red,
-                  onTap: () {},
-                ),
+                loading: () => _buildMiniHealthCard(icon: Icons.medication, title: 'Meds', value: '-', status: '...', statusColor: Colors.grey, onTap: () {}),
+                error: (_, __) => _buildMiniHealthCard(icon: Icons.medication, title: 'Meds', value: '!', status: 'Error', statusColor: Colors.red, onTap: () {}),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
+            const SizedBox(width: 8),
             Expanded(
-              child: _buildHealthCard(
-                context,
-                icon: Icons.monitor_weight,
-                title: 'Weight',
-                count: pet.weightKg != null ? 1 : 0,
-                status: pet.weightKg != null ? '${pet.weightKg} kg' : 'Not set',
-                statusColor: pet.weightKg != null
-                    ? PawThemeData.successGreen
-                    : Colors.orange,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        WeightHistoryScreen(petId: pet.id, petName: pet.name),
-                  ),
-                ),
-              ),
+              child: _buildMiniHealthCard(icon: Icons.monitor_weight, title: 'Weight', value: pet.weightKg != null ? '${pet.weightKg!.toStringAsFixed(1)}' : '-', status: pet.weightKg != null ? 'kg' : 'Not set', statusColor: pet.weightKg != null ? PawThemeData.successGreen : Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => WeightHistoryScreen(petId: pet.id, petName: pet.name)))),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildMiniHealthCard({required IconData icon, required String title, required String value, required String status, required Color statusColor, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 20, color: statusColor),
+            const SizedBox(height: 4),
+            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: statusColor)),
+            Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          ],
+        ),
+      ),
     );
   }
 
