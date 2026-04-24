@@ -285,5 +285,35 @@ Notification types:
 
 
 ==========================================
+ID CARD EXPORT (PNG) - Premium Feature
+==========================================
+- From Pet Profile: Export ID Card button
+- Shows preview dialog with ID card design
+- Download button captures and shares as PNG image
+- ID card includes: PawPass branding, pet photo, pet info, QR code
+
+
+==========================================
+SHARE PASSPORT ONLINE - Premium Feature
+==========================================
+- Premium users can share pet passports online via link
+- Toggle switch in Pet Profile enables/disables sharing
+- Generates unique share token URL
+- QR code displays live passport link
+- Regenerate link invalidates old links
+- Web view at: https://user.github.io/repo/index.html?token=xxx
+
+
+==========================================
+HEALTH SUMMARY - Compact Layout
+==========================================
+- In Pet Profile: 3-column row showing:
+  - Vaccines: Count + status (OK/overdue/due)
+  - Meds: Count + Active/None
+  - Weight: Current weight in kg
+- Each card navigates to respective screens
+
+
+==========================================
 END OF WALKTHROUGH
 ==========================================
