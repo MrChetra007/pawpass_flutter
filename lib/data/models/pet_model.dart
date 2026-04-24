@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class Pet {
   final String id;
   final String userId;
@@ -18,7 +20,17 @@ class Pet {
   final String? shareToken;
   final bool isSharingEnabled;
 
-  static const String shareBaseUrl = 'https://pawpass.vercel.app/pet';
+  static const String sharePage = 'index.html';
+
+  static String get shareBaseUrl {
+    final envUrl = dotenv.env['SHARE_ROOT_URL'];
+    if (envUrl != null && envUrl.isNotEmpty) {
+      // If envUrl doesn't end with html, append the page name
+      if (envUrl.endsWith('.html')) return envUrl;
+      return '$envUrl/$sharePage';
+    }
+    return 'https://pawpass.vercel.app/$sharePage';
+  }
 
   Pet({
     required this.id,

@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/pet_model.dart';
 import '../../data/models/vaccine_model.dart';
 import '../../shared/providers/pet_provider.dart';
@@ -993,7 +993,7 @@ class PetProfileScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _shareLink(context, shareUrl, pet.name),
+                    onPressed: () => _shareLink(context, shareUrl),
                     icon: const Icon(Icons.share, size: 18),
                     label: const Text('Share'),
                     style: ElevatedButton.styleFrom(
@@ -1007,6 +1007,21 @@ class PetProfileScreen extends ConsumerWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _previewPassport(context, shareUrl),
+                icon: const Icon(Icons.visibility, size: 18),
+                label: const Text('Preview'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -1070,11 +1085,18 @@ class PetProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _shareLink(BuildContext context, String url, String petName) {
-    Share.share(
-      'Check out $petName\'s PawPass passport: $url',
-      subject: '$petName\'s Pet Passport',
-    );
+  void _shareLink(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _previewPassport(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Future<void> _regenerateLink(
@@ -1208,30 +1230,15 @@ class PetProfileScreen extends ConsumerWidget {
     try {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Generating PDF...')));
+      ).showSnackBar(const SnackBar(content: Text('Generating ID Card...')));
 
-      final vaccines = await ref
-          .read(vaccineRepositoryProvider)
-          .getVaccines(petId: pet.id);
-      final medications = await ref
-          .read(medicationRepositoryProvider)
-          .getMedications(petId: pet.id);
-      final records = await ref
-          .read(recordRepositoryProvider)
-          .getRecords(petId: pet.id);
-
-      final pdf = await PdfService.generatePetPassport(
-        pet: pet,
-        vaccines: vaccines,
-        medications: medications,
-        records: records,
-      );
+      final pdf = await PdfService.generatePetIdCard(pet: pet);
 
       if (context.mounted) {
         await PdfService.printOrSavePdf(
           context,
           pdf,
-          '${pet.name}_passport.pdf',
+          '${pet.name}_id_card.pdf',
         );
       }
     } catch (e) {

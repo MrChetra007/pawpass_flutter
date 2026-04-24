@@ -10,6 +10,44 @@ import '../../data/models/medication_model.dart';
 import '../../data/models/vet_record_model.dart';
 
 class PdfService {
+  static Future<pw.Document> generatePetIdCard({
+    required Pet pet,
+  }) async {
+    final pdf = pw.Document();
+    final dateFormat = DateFormat('MMM d, yyyy');
+
+    final primaryColor = PdfColor.fromInt(0xFF2563EB);
+
+    pw.MemoryImage? petImage;
+    if (pet.photoUrl != null) {
+      try {
+        final response = await http.get(Uri.parse(pet.photoUrl!));
+        if (response.statusCode == 200) {
+          petImage = pw.MemoryImage(response.bodyBytes);
+        }
+      } catch (_) {}
+    }
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (context) => [
+          _buildHeader(pet, primaryColor),
+          pw.SizedBox(height: 25),
+          _buildPetInfoCardCompact(pet, dateFormat, petImage, primaryColor),
+          pw.SizedBox(height: 30),
+          if (pet.isSharingEnabled && pet.shareLink.isNotEmpty)
+            _buildShareSection(pet, primaryColor),
+          pw.SizedBox(height: 30),
+          _buildFooter(),
+        ],
+      ),
+    );
+
+    return pdf;
+  }
+
   static Future<pw.Document> generatePetPassport({
     required Pet pet,
     required List<Vaccine> vaccines,
@@ -340,6 +378,147 @@ class PdfService {
             ],
           ),
           pw.Divider(color: PdfColors.grey600, thickness: 0.8),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildPetInfoCardCompact(
+    Pet pet,
+    DateFormat dateFormat,
+    pw.MemoryImage? petImage,
+    PdfColor primaryColor,
+  ) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(24),
+      decoration: pw.BoxDecoration(
+        color: PdfColor.fromInt(0xFFE0F0FF),
+        borderRadius: pw.BorderRadius.circular(16),
+        border: pw.Border.all(color: primaryColor, width: 2),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'PET ID CARD',
+                style: pw.TextStyle(
+                  fontSize: 20,
+                  fontWeight: pw.FontWeight.bold,
+                  color: primaryColor,
+                  letterSpacing: 2,
+                ),
+              ),
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: pw.BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: pw.BorderRadius.circular(20),
+                ),
+                child: pw.Text(
+                  'OFFICIAL',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.white,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 20),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Column(
+                children: [
+                  pw.Container(
+                    width: 120,
+                    height: 120,
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.grey300,
+                      borderRadius: pw.BorderRadius.circular(8),
+                      border: pw.Border.all(color: PdfColors.grey500, width: 2),
+                    ),
+                    child: petImage != null
+                        ? pw.ClipRRect(
+                            horizontalRadius: 8,
+                            verticalRadius: 8,
+                            child: pw.Image(petImage, width: 120, height: 120),
+                          )
+                        : pw.Center(
+                            child: pw.Text(
+                              pet.speciesEmoji,
+                              style: const pw.TextStyle(fontSize: 48),
+                            ),
+                          ),
+                  ),
+                  pw.SizedBox(height: 8),
+                  pw.BarcodeWidget(
+                    barcode: pw.Barcode.qrCode(),
+                    data: pet.id,
+                    width: 80,
+                    height: 80,
+                  ),
+                ],
+              ),
+              pw.SizedBox(width: 24),
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      pet.name,
+                      style: pw.TextStyle(
+                        fontSize: 28,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      '${pet.species} ${pet.breed != null ? "• ${pet.breed}" : ""}',
+                      style: pw.TextStyle(fontSize: 14, color: PdfColors.grey700),
+                    ),
+                    pw.SizedBox(height: 16),
+                    _buildIdFieldCompact('Species', pet.species),
+                    _buildIdFieldCompact('Breed', pet.breed ?? 'Unknown'),
+                    _buildIdFieldCompact('Gender', pet.gender ?? 'Unknown'),
+                    _buildIdFieldCompact('Birthday', pet.dob != null ? dateFormat.format(pet.dob!) : 'Unknown'),
+                    _buildIdFieldCompact('Age', pet.ageString),
+                    if (pet.color != null) _buildIdFieldCompact('Color', pet.color!),
+                    if (pet.microchip != null) _buildIdFieldCompact('Microchip', pet.microchip!),
+                    if (pet.weightKg != null) _buildIdFieldCompact('Weight', '${pet.weightKg} kg'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildIdFieldCompact(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 4),
+      child: pw.Row(
+        children: [
+          pw.SizedBox(
+            width: 70,
+            child: pw.Text(
+              label,
+              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+            ),
+          ),
         ],
       ),
     );

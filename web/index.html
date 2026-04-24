@@ -1,41 +1,828 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="PawPass — Manage your pet's health records and stay connected with your vet.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pet Passport · PawPass</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --blue: #2563EB;
+      --blue-light: #EFF6FF;
+      --blue-mid: #DBEAFE;
+      --green: #059669;
+      --green-light: #D1FAE5;
+      --yellow: #D97706;
+      --yellow-light: #FEF3C7;
+      --red: #DC2626;
+      --red-light: #FEE2E2;
+      --gray-50: #F9FAFB;
+      --gray-100: #F3F4F6;
+      --gray-200: #E5E7EB;
+      --gray-400: #9CA3AF;
+      --gray-600: #4B5563;
+      --gray-800: #1F2937;
+      --gray-900: #111827;
+      --radius: 16px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow: 0 4px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+    }
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="pawpass">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png" />
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
 
-  <title>pawpass</title>
-  <link rel="manifest" href="manifest.json">
+    /* ── HEADER ── */
+    .header {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--gray-200);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      object-fit: contain;
+      /* Fallback if favicon.png not found */
+    }
+    .header-logo-fallback {
+      width: 34px;
+      height: 34px;
+      background: var(--blue);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .header-name {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 19px;
+      color: var(--gray-900);
+      letter-spacing: -0.3px;
+    }
+    .readonly-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      padding: 5px 11px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-600);
+    }
+    .readonly-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 580px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-200);
+      margin-bottom: 14px;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fadeUp 0.45s ease forwards;
+    }
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.10s; }
+    .card:nth-child(3) { animation-delay: 0.15s; }
+    .card:nth-child(4) { animation-delay: 0.20s; }
+    .card:nth-child(5) { animation-delay: 0.25s; }
+    .card:nth-child(6) { animation-delay: 0.30s; }
+    .card:nth-child(7) { animation-delay: 0.35s; }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── PET HERO CARD ── */
+    .hero-card {
+      background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%);
+      color: white;
+      border: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 200px; height: 200px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+    }
+    .hero-card::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: -20px;
+      width: 180px; height: 180px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 50%;
+    }
+    .hero-inner {
+      padding: 24px;
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .pet-avatar-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .pet-avatar {
+      width: 88px;
+      height: 88px;
+      border-radius: 20px;
+      object-fit: cover;
+      border: 3px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+    .pet-avatar img {
+      width: 88px;
+      height: 88px;
+      border-radius: 17px;
+      object-fit: cover;
+    }
+    .species-pill {
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .hero-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .hero-label {
+      font-size: 11px;
+      font-weight: 500;
+      opacity: 0.65;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+    .hero-name {
+      font-family: 'Fraunces', serif;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    .hero-breed {
+      font-size: 14px;
+      opacity: 0.75;
+      margin-bottom: 14px;
+    }
+    .hero-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .hero-chip {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    /* ── SECTION HEADER ── */
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 18px 20px 0;
+      margin-bottom: 14px;
+    }
+    .section-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .icon-blue { background: var(--blue-mid); }
+    .icon-green { background: var(--green-light); }
+    .icon-yellow { background: var(--yellow-light); }
+    .icon-gray { background: var(--gray-100); }
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+    .section-count {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--gray-400);
+      font-weight: 500;
+    }
+
+    /* ── INFO GRID ── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0;
+      padding: 0 20px 20px;
+    }
+    .info-item {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .info-item:nth-last-child(-n+2) { border-bottom: none; }
+    .info-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 3px;
+    }
+    .info-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    /* ── ITEM ROWS ── */
+    .items-list {
+      padding: 0 20px 20px;
+    }
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--gray-100);
+      gap: 12px;
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-left { flex: 1; min-width: 0; }
+    .item-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .item-meta {
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+
+    /* ── STATUS BADGES ── */
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
+    .badge-green { background: var(--green-light); color: var(--green); }
+    .badge-yellow { background: var(--yellow-light); color: var(--yellow); }
+    .badge-red { background: var(--red-light); color: var(--red); }
+    .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+
+    /* ── MED CHIPS ── */
+    .med-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .med-chip {
+      background: var(--gray-100);
+      color: var(--gray-600);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    /* ── WEIGHT CHART ── */
+    .chart-wrap {
+      padding: 0 20px 20px;
+    }
+    .chart-container {
+      position: relative;
+      height: 180px;
+    }
+    .weight-latest {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 0 20px 12px;
+    }
+    .weight-number {
+      font-family: 'Fraunces', serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--blue);
+    }
+    .weight-unit {
+      font-size: 14px;
+      color: var(--gray-400);
+    }
+    .weight-date {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-left: auto;
+      align-self: center;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: var(--gray-100);
+      margin: 0 20px;
+    }
+
+    /* ── LOADING ── */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 70vh;
+      gap: 16px;
+      color: var(--gray-400);
+      font-size: 14px;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--gray-200);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── ERROR ── */
+    .error-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 70vh;
+      text-align: center;
+      padding: 24px;
+    }
+    .error-emoji {
+      font-size: 56px;
+      margin-bottom: 20px;
+      animation: pulse 2s ease infinite;
+    }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+    .error-title {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--gray-900);
+    }
+    .error-sub {
+      color: var(--gray-400);
+      font-size: 14px;
+      margin-bottom: 28px;
+      max-width: 280px;
+    }
+    .cta-btn {
+      background: var(--blue);
+      color: white;
+      padding: 13px 28px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: opacity 0.2s;
+    }
+    .cta-btn:hover { opacity: 0.88; }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 24px 20px;
+      color: var(--gray-400);
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .footer-logo {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      object-fit: contain;
+    }
+    .footer-logo-fb {
+      width: 22px;
+      height: 22px;
+      background: var(--blue);
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    .footer a { color: var(--blue); text-decoration: none; font-weight: 500; }
+    .footer-divider { color: var(--gray-200); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 420px) {
+      .hero-name { font-size: 24px; }
+      .hero-inner { gap: 14px; }
+      .pet-avatar, .pet-avatar img { width: 74px; height: 74px; }
+    }
+    @media (min-width: 600px) {
+      .container { padding: 32px 20px 80px; }
+      .card { border-radius: 20px; }
+    }
+  </style>
 </head>
-
 <body>
-  <script src="flutter_bootstrap.js" async></script>
-</body>
 
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-brand">
+      <img class="header-logo" src="favicon.png" alt="PawPass"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+      <div class="header-logo-fallback" style="display:none">🐾</div>
+      <span class="header-name">PawPass</span>
+    </div>
+    <div class="readonly-badge">Read-only view</div>
+  </header>
+
+  <div id="app">
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>Loading passport…</span>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════
+    // CONFIG — set your Supabase credentials
+    // ═══════════════════════════════════════
+    const SUPABASE_URL = 'https://paqtsmcmbepvlvqnutet.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhcXRzbWNtYmVwdmx2cW51dGV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY3MDE3MTUsImV4cCI6MjA4MjI3NzcxNX0.eBcpKbnCRkPIYF0aZ7IZyBOjfj1KtJNcj9z4QoeZMBQ';
+    // ═══════════════════════════════════════
+
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const token = new URLSearchParams(window.location.search).get('token');
+
+    token ? loadPet(token) : showError('Invalid link', 'No passport token was found in this URL.');
+
+    async function loadPet(token) {
+      try {
+        const { data: pet, error } = await db
+          .from('pets')
+          .select('*, vaccines(*), medications(*), vet_records(*), weight_logs(*)')
+          .eq('share_token', token)
+          .eq('is_sharing_enabled', true)
+          .single();
+
+        if (error || !pet) showError('Passport unavailable', 'The owner may have disabled sharing or changed the link.');
+        else renderPet(pet);
+      } catch (e) {
+        showError('Something went wrong', 'Please try again or contact the pet owner.');
+      }
+    }
+
+    function showError(title, sub) {
+      document.getElementById('app').innerHTML = `
+        <div class="container">
+          <div class="error-page">
+            <div class="error-emoji">🔒</div>
+            <div class="error-title">${title}</div>
+            <p class="error-sub">${sub}</p>
+            <a class="cta-btn" href="https://pawpass.app">Download PawPass</a>
+          </div>
+        </div>`;
+    }
+
+    function fmt(d) {
+      if (!d) return 'N/A';
+      return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function age(dob) {
+      if (!dob) return null;
+      const now = new Date(), b = new Date(dob);
+      const m = (now.getFullYear() - b.getFullYear()) * 12 + now.getMonth() - b.getMonth();
+      if (m < 1) return Math.floor((now - b) / 864e5) + 'd old';
+      if (m < 12) return m + ' months';
+      const y = Math.floor(m / 12), rm = m % 12;
+      return y + 'y' + (rm ? ' ' + rm + 'm' : '') + ' old';
+    }
+
+    function vaccineStatus(v) {
+      if (!v.next_due_date) return { txt: 'Up to date', cls: 'badge-green' };
+      const days = Math.ceil((new Date(v.next_due_date) - new Date()) / 864e5);
+      if (days < 0) return { txt: 'Overdue', cls: 'badge-red' };
+      if (days <= 30) return { txt: 'Due soon', cls: 'badge-yellow' };
+      return { txt: 'Up to date', cls: 'badge-green' };
+    }
+
+    const speciesEmoji = { dog:'🐶', cat:'🐱', rabbit:'🐰', bird:'🐦', hamster:'🐹', fish:'🐠', turtle:'🐢' };
+
+    function renderPet(pet) {
+      const emo = speciesEmoji[(pet.species||'').toLowerCase()] || '🐾';
+      const vax = (pet.vaccines || []);
+      const meds = (pet.medications || []).filter(m => m.is_active);
+      const recs = (pet.vet_records || []).slice(0, 10);
+      const wts = (pet.weight_logs || []).sort((a, b) => new Date(b.recorded_at) - new Date(a.recorded_at));
+      const petAge = age(pet.dob);
+
+      // ── Hero chips
+      const chips = [
+        pet.gender && `<span class="hero-chip">${pet.gender}</span>`,
+        pet.color && `<span class="hero-chip">${pet.color}</span>`,
+        petAge && `<span class="hero-chip">${petAge}</span>`,
+        pet.neutered && `<span class="hero-chip">Neutered</span>`,
+      ].filter(Boolean).join('');
+
+      // ── Avatar
+      const avatar = pet.photo_url
+        ? `<div class="pet-avatar"><img src="${pet.photo_url}" alt="${pet.name}" onerror="this.parentElement.innerHTML='${emo}'"></div>`
+        : `<div class="pet-avatar">${emo}</div>`;
+
+      let html = `<div class="container">`;
+
+      // ── HERO CARD
+      html += `
+        <div class="card hero-card">
+          <div class="hero-inner">
+            <div class="pet-avatar-wrap">
+              ${avatar}
+              <div class="species-pill">${pet.species || 'Pet'}</div>
+            </div>
+            <div class="hero-info">
+              <div class="hero-label">Pet Passport</div>
+              <div class="hero-name">${pet.name}</div>
+              <div class="hero-breed">${pet.breed || 'Mixed breed'}</div>
+              <div class="hero-chips">${chips}</div>
+            </div>
+          </div>
+        </div>`;
+
+      // ── ID DETAILS CARD
+      const fields = [
+        ['Birthday', fmt(pet.dob)],
+        ['Weight', pet.weight_kg ? `${pet.weight_kg} kg` : null],
+        ['Gender', pet.gender],
+        ['Color', pet.color],
+        ['Microchip', pet.microchip],
+        ['Neutered', pet.neutered != null ? (pet.neutered ? 'Yes' : 'No') : null],
+      ].filter(([, v]) => v);
+
+      if (fields.length) {
+        html += `
+          <div class="card">
+            <div class="section-head">
+              <div class="section-icon icon-blue">🪪</div>
+              <div class="section-title">Identification</div>
+            </div>
+            <div class="info-grid">
+              ${fields.map(([l, v]) => `
+                <div class="info-item">
+                  <div class="info-label">${l}</div>
+                  <div class="info-value">${v}</div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+      }
+
+      // ── VACCINES CARD
+      if (vax.length) {
+        html += `
+          <div class="card">
+            <div class="section-head">
+              <div class="section-icon icon-blue">💉</div>
+              <div class="section-title">Vaccinations</div>
+              <div class="section-count">${vax.length} record${vax.length !== 1 ? 's' : ''}</div>
+            </div>
+            <div class="items-list">
+              ${vax.map(v => {
+                const s = vaccineStatus(v);
+                const meta = [
+                  v.date_given && `Given ${fmt(v.date_given)}`,
+                  v.next_due_date && `Due ${fmt(v.next_due_date)}`,
+                  v.vet_name
+                ].filter(Boolean).join(' · ');
+                return `
+                  <div class="item-row">
+                    <div class="item-left">
+                      <div class="item-name">${v.name}</div>
+                      ${meta ? `<div class="item-meta">${meta}</div>` : ''}
+                    </div>
+                    <span class="badge ${s.cls}">${s.txt}</span>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+      }
+
+      // ── MEDICATIONS CARD
+      if (meds.length) {
+        html += `
+          <div class="card">
+            <div class="section-head">
+              <div class="section-icon icon-green">💊</div>
+              <div class="section-title">Current Medications</div>
+              <div class="section-count">${meds.length} active</div>
+            </div>
+            <div class="items-list">
+              ${meds.map(m => {
+                const chips = [
+                  m.dosage && `${m.dosage}`,
+                  m.frequency && `${m.frequency}`,
+                  m.meal_timing && `${m.meal_timing}`,
+                  m.prescribed_by && `Dr. ${m.prescribed_by}`,
+                ].filter(Boolean);
+                return `
+                  <div class="item-row">
+                    <div class="item-left">
+                      <div class="item-name">${m.name}</div>
+                      ${chips.length ? `<div class="med-chips">${chips.map(c => `<span class="med-chip">${c}</span>`).join('')}</div>` : ''}
+                    </div>
+                    <span class="badge badge-green">Active</span>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+      }
+
+      // ── WEIGHT CARD
+      if (wts.length) {
+        const latest = wts[0];
+        const chartData = wts.slice(0, 12).reverse();
+        html += `
+          <div class="card">
+            <div class="section-head">
+              <div class="section-icon icon-yellow">⚖️</div>
+              <div class="section-title">Weight History</div>
+            </div>
+            <div class="weight-latest">
+              <span class="weight-number">${latest.weight_kg}</span>
+              <span class="weight-unit">kg</span>
+              <span class="weight-date">as of ${fmt(latest.recorded_at)}</span>
+            </div>
+            <div class="divider"></div>
+            <div class="chart-wrap">
+              <div class="chart-container">
+                <canvas id="weightChart"></canvas>
+              </div>
+            </div>
+          </div>`;
+
+        setTimeout(() => {
+          const ctx = document.getElementById('weightChart');
+          if (!ctx) return;
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: chartData.map(w => new Date(w.recorded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+              datasets: [{
+                data: chartData.map(w => w.weight_kg),
+                borderColor: '#2563EB',
+                backgroundColor: 'rgba(37,99,235,0.08)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#2563EB',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                borderWidth: 2,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false }, tooltip: {
+                backgroundColor: '#1F2937',
+                titleFont: { family: 'DM Sans', size: 11 },
+                bodyFont: { family: 'DM Sans', size: 13, weight: '600' },
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: { label: ctx => `${ctx.raw} kg` }
+              }},
+              scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9CA3AF' } },
+                y: { grid: { color: '#F3F4F6' }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9CA3AF', callback: v => v + ' kg' }, border: { display: false } }
+              }
+            }
+          });
+        }, 120);
+      }
+
+      // ── RECORDS CARD
+      if (recs.length) {
+        html += `
+          <div class="card">
+            <div class="section-head">
+              <div class="section-icon icon-gray">📋</div>
+              <div class="section-title">Health Records</div>
+              <div class="section-count">${recs.length} records</div>
+            </div>
+            <div class="items-list">
+              ${recs.map(r => `
+                <div class="item-row">
+                  <div class="item-left">
+                    <div class="item-name">${r.title}</div>
+                    <div class="item-meta">${fmt(r.date)}${r.vet_name ? ' · ' + r.vet_name : ''}${r.cost ? ' · $' + Number(r.cost).toFixed(2) : ''}</div>
+                  </div>
+                  <span class="badge badge-gray">${r.type || 'Visit'}</span>
+                </div>`).join('')}
+            </div>
+          </div>`;
+      }
+
+      // ── FOOTER
+      html += `
+        <div class="footer">
+          <div class="footer-brand">
+            <img class="footer-logo" src="favicon.png" alt=""
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex'">
+            <span class="footer-logo-fb" style="display:none">🐾</span>
+            <span>Powered by <a href="https://pawpass.app">PawPass</a></span>
+          </div>
+          <span>Shared ${fmt(pet.updated_at || pet.created_at)}</span>
+        </div>
+      </div>`; // close .container
+
+      document.getElementById('app').innerHTML = html;
+    }
+  </script>
+</body>
 </html>
