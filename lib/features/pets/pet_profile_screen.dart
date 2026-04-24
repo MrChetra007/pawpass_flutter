@@ -1234,6 +1234,8 @@ class PetProfileScreen extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
+        title: const Text('Export ID Card'),
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
         insetPadding: const EdgeInsets.all(16),
         content: SizedBox(
           width: MediaQuery.of(context).size.width,
@@ -1244,7 +1246,7 @@ class PetProfileScreen extends ConsumerWidget {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () async {
               Navigator.pop(ctx);
               await IdCardService.shareCard(
@@ -1252,7 +1254,8 @@ class PetProfileScreen extends ConsumerWidget {
                 petName: pet.name,
               );
             },
-            child: const Text('Share'),
+            icon: const Icon(Icons.download),
+            label: const Text('Download'),
           ),
         ],
       ),
