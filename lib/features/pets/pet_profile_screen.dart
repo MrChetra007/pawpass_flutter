@@ -676,9 +676,9 @@ class PetProfileScreen extends ConsumerWidget {
         children: [
           _buildActionTile(
             context,
-            icon: Icons.picture_as_pdf,
-            title: 'Export Passport',
-            subtitle: 'Generate PDF with all health records',
+            icon: Icons.credit_card,
+            title: 'Export ID Card',
+            subtitle: 'Download as PNG image',
             iconColor: theme.colorScheme.primary,
             iconBgColor: theme.colorScheme.primary.withValues(alpha: 0.1),
             onTap: () => _exportPdf(context, ref, pet),
@@ -865,13 +865,13 @@ class PetProfileScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Share Passport',
+                      'Share Passport Online',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      'Upgrade to share your pet\'s passport',
+                      'Pro: Share via link for vets & sitters',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.textTheme.labelLarge?.color,
                       ),

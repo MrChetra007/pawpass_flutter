@@ -129,6 +129,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
                       'Everything in Pro Plan',
                       'PDF passport export',
                       'Priority support',
+                      'share on social media',
                     ],
                     notIncluded: const [],
                     onTap: () => _showUpgradeDialog('premium'),
@@ -691,7 +692,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
       ),
     );
 
-try {
+    try {
       await iapService.buyProduct(productId);
       ref.invalidate(userProvider);
       ref.invalidate(subscriptionProvider);
