@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/notification_service.dart';
+import '../../data/repositories/appointment_repository.dart';
+import '../../data/repositories/vaccine_repository.dart';
+import '../../data/repositories/medication_repository.dart';
+import '../../data/repositories/pet_repository.dart';
 
 class TestNotificationsScreen extends StatefulWidget {
   const TestNotificationsScreen({super.key});
@@ -177,6 +182,29 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.error,
                   foregroundColor: theme.colorScheme.onError,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 16),
+              Text(
+                'Reminders',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Reschedule reminders for all your pets\' appointments, vaccines, and medications.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => _rescheduleAllReminders(context),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reschedule All Reminders'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(16),
                 ),
               ),
               const SizedBox(height: 32),
@@ -355,6 +383,88 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
       ScaffoldMessenger.of(ctx).showSnackBar(
         const SnackBar(content: Text('All notifications cancelled!')),
       );
+    }
+  }
+
+  Future<void> _rescheduleAllReminders(BuildContext ctx) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(ctx);
+    
+    scaffoldMessenger.showSnackBar(
+      const SnackBar(content: Text('Rescheduling reminders...')),
+    );
+
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('Please log in to reschedule reminders')),
+        );
+        return;
+      }
+
+      final appointments = await AppointmentRepository(supabase).getUpcomingAppointments();
+      final vaccines = await VaccineRepository(supabase).getVaccines();
+      final medications = await MedicationRepository(supabase).getMedications(activeOnly: true);
+      final pets = await PetRepository(supabase).getPets();
+
+      final petMap = {for (final p in pets) p.id: p.name};
+
+      final aptData = appointments
+          .where((a) => a.datetime.isAfter(DateTime.now()))
+          .map((a) => {
+                'id': a.id,
+                'petName': petMap[a.petId] ?? 'Your pet',
+                'title': a.title,
+                'datetime': a.datetime,
+              })
+          .toList();
+
+      final vacData = vaccines
+          .where((v) => v.nextDueDate != null && v.nextDueDate!.isAfter(DateTime.now()))
+          .map((v) => {
+                'id': v.id,
+                'petName': petMap[v.petId] ?? 'Your pet',
+                'name': v.name,
+                'dueDate': v.nextDueDate,
+              })
+          .toList();
+
+      final medData = medications
+          .where((m) => m.timeOfDay.isNotEmpty)
+          .map((m) => {
+                'id': m.id,
+                'petName': petMap[m.petId] ?? 'Your pet',
+                'name': m.name,
+                'dosage': m.dosage,
+                'timeOfDay': m.timeOfDay,
+                'frequency': m.frequency,
+                'startDate': m.startDate,
+                'endDate': m.endDate,
+              })
+          .toList();
+
+      await NotificationService().scheduleAllReminders(
+        appointments: aptData,
+        vaccines: vacData,
+        medications: medData,
+      );
+
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Scheduled ${aptData.length} appointments, ${vacData.length} vaccines, ${medData.length} medications',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 }
