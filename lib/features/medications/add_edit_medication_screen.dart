@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../core/constants/supabase_constants.dart';
 import '../../shared/providers/medication_provider.dart';
 
 class AddEditMedicationScreen extends ConsumerStatefulWidget {
@@ -15,10 +14,12 @@ class AddEditMedicationScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<AddEditMedicationScreen> createState() => _AddEditMedicationScreenState();
+  ConsumerState<AddEditMedicationScreen> createState() =>
+      _AddEditMedicationScreenState();
 }
 
-class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScreen> {
+class _AddEditMedicationScreenState
+    extends ConsumerState<AddEditMedicationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _dosageController = TextEditingController();
@@ -123,12 +124,13 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
 
       if (isEditing) {
         data['is_active'] = _isActive;
-        await ref.read(medicationNotifierProvider.notifier).updateMedication(
-              widget.medication.id,
-              data,
-            );
+        await ref
+            .read(medicationNotifierProvider.notifier)
+            .updateMedication(widget.medication.id, data);
       } else {
-        await ref.read(medicationNotifierProvider.notifier).createMedication(
+        await ref
+            .read(medicationNotifierProvider.notifier)
+            .createMedication(
               petId: widget.petId,
               name: _nameController.text.trim(),
               dosage: _dosageController.text.trim().isNotEmpty
@@ -153,9 +155,9 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -194,7 +196,8 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
                 prefixIcon: Icon(Icons.medication),
                 hintText: 'e.g., Heartgard, Apoquel',
               ),
-              validator: (v) => v?.trim().isEmpty == true ? 'Name is required' : null,
+              validator: (v) =>
+                  v?.trim().isEmpty == true ? 'Name is required' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -214,23 +217,29 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
               children: [
                 ChoiceChip(
                   label: const Text('Any'),
-                  selected: _selectedMealTiming == null || _selectedMealTiming == 'any',
-                  onSelected: (_) => setState(() => _selectedMealTiming = 'any'),
+                  selected:
+                      _selectedMealTiming == null ||
+                      _selectedMealTiming == 'any',
+                  onSelected: (_) =>
+                      setState(() => _selectedMealTiming = 'any'),
                 ),
                 ChoiceChip(
                   label: const Text('Before Meal'),
                   selected: _selectedMealTiming == 'before_meal',
-                  onSelected: (_) => setState(() => _selectedMealTiming = 'before_meal'),
+                  onSelected: (_) =>
+                      setState(() => _selectedMealTiming = 'before_meal'),
                 ),
                 ChoiceChip(
                   label: const Text('After Meal'),
                   selected: _selectedMealTiming == 'after_meal',
-                  onSelected: (_) => setState(() => _selectedMealTiming = 'after_meal'),
+                  onSelected: (_) =>
+                      setState(() => _selectedMealTiming = 'after_meal'),
                 ),
                 ChoiceChip(
                   label: const Text('With Meal'),
                   selected: _selectedMealTiming == 'with_meal',
-                  onSelected: (_) => setState(() => _selectedMealTiming = 'with_meal'),
+                  onSelected: (_) =>
+                      setState(() => _selectedMealTiming = 'with_meal'),
                 ),
               ],
             ),
@@ -246,7 +255,8 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
                   selected: _selectedFrequencyType == 'daily',
                   onSelected: (_) => setState(() {
                     _selectedFrequencyType = 'daily';
-                    if (_selectedTimesOfDay.isEmpty) _selectedTimesOfDay.add('morning');
+                    if (_selectedTimesOfDay.isEmpty)
+                      _selectedTimesOfDay.add('morning');
                   }),
                 ),
                 ChoiceChip(
@@ -254,7 +264,8 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
                   selected: _selectedFrequencyType == 'weekly',
                   onSelected: (_) => setState(() {
                     _selectedFrequencyType = 'weekly';
-                    if (_selectedTimesOfDay.isEmpty) _selectedTimesOfDay.add('morning');
+                    if (_selectedTimesOfDay.isEmpty)
+                      _selectedTimesOfDay.add('morning');
                   }),
                 ),
                 ChoiceChip(
@@ -262,7 +273,8 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
                   selected: _selectedFrequencyType == 'monthly',
                   onSelected: (_) => setState(() {
                     _selectedFrequencyType = 'monthly';
-                    if (_selectedTimesOfDay.isEmpty) _selectedTimesOfDay.add('morning');
+                    if (_selectedTimesOfDay.isEmpty)
+                      _selectedTimesOfDay.add('morning');
                   }),
                 ),
               ],
@@ -271,7 +283,10 @@ class _AddEditMedicationScreenState extends ConsumerState<AddEditMedicationScree
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Text('Times per $_selectedFrequencyType:', style: theme.textTheme.bodyMedium),
+                  Text(
+                    'Times per $_selectedFrequencyType:',
+                    style: theme.textTheme.bodyMedium,
+                  ),
                   const SizedBox(width: 16),
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline),

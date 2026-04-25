@@ -421,33 +421,122 @@ class PetProfileScreen extends ConsumerWidget {
             Expanded(
               child: vaccinesAsync.when(
                 data: (vaccines) {
-                  final petVaccines = vaccines.where((v) => v.petId == pet.id).toList();
-                  final overdue = petVaccines.where((v) => v.status == VaccineStatus.overdue).length;
-                  final dueSoon = petVaccines.where((v) => v.status == VaccineStatus.dueSoon).length;
-                  Color statusColor; String statusText;
-                  if (overdue > 0) { statusColor = Colors.red; statusText = '$overdue'; }
-                  else if (dueSoon > 0) { statusColor = Colors.orange; statusText = '$dueSoon'; }
-                  else { statusColor = PawThemeData.successGreen; statusText = 'OK'; }
-                  return _buildMiniHealthCard(icon: Icons.vaccines, title: 'Vaccines', value: '${petVaccines.length}', status: statusText, statusColor: statusColor, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => VaccinesListScreen(initialPetId: pet.id))));
+                  final petVaccines = vaccines
+                      .where((v) => v.petId == pet.id)
+                      .toList();
+                  final overdue = petVaccines
+                      .where((v) => v.status == VaccineStatus.overdue)
+                      .length;
+                  final dueSoon = petVaccines
+                      .where((v) => v.status == VaccineStatus.dueSoon)
+                      .length;
+                  Color statusColor;
+                  String statusText;
+                  if (overdue > 0) {
+                    statusColor = Colors.red;
+                    statusText = '$overdue';
+                  } else if (dueSoon > 0) {
+                    statusColor = Colors.orange;
+                    statusText = '$dueSoon';
+                  } else {
+                    statusColor = PawThemeData.successGreen;
+                    statusText = 'OK';
+                  }
+                  return _buildMiniHealthCard(
+                    icon: Icons.vaccines,
+                    title: 'Vaccines',
+                    value: '${petVaccines.length}',
+                    status: statusText,
+                    statusColor: statusColor,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            VaccinesListScreen(initialPetId: pet.id),
+                      ),
+                    ),
+                  );
                 },
-                loading: () => _buildMiniHealthCard(icon: Icons.vaccines, title: 'Vaccines', value: '-', status: '...', statusColor: Colors.grey, onTap: () {}),
-                error: (_, __) => _buildMiniHealthCard(icon: Icons.vaccines, title: 'Vaccines', value: '!', status: 'Error', statusColor: Colors.red, onTap: () {}),
+                loading: () => _buildMiniHealthCard(
+                  icon: Icons.vaccines,
+                  title: 'Vaccines',
+                  value: '-',
+                  status: '...',
+                  statusColor: Colors.grey,
+                  onTap: () {},
+                ),
+                error: (_, __) => _buildMiniHealthCard(
+                  icon: Icons.vaccines,
+                  title: 'Vaccines',
+                  value: '!',
+                  status: 'Error',
+                  statusColor: Colors.red,
+                  onTap: () {},
+                ),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: medicationsAsync.when(
                 data: (medications) {
-                  final activeMeds = medications.where((m) => m.petId == pet.id && m.isActive).length;
-                  return _buildMiniHealthCard(icon: Icons.medication, title: 'Meds', value: '$activeMeds', status: activeMeds > 0 ? 'Active' : 'None', statusColor: activeMeds > 0 ? theme.colorScheme.primary : PawThemeData.successGreen, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MedicationsListScreen(initialPetId: pet.id))));
+                  final activeMeds = medications
+                      .where((m) => m.petId == pet.id && m.isActive)
+                      .length;
+                  return _buildMiniHealthCard(
+                    icon: Icons.medication,
+                    title: 'Meds',
+                    value: '$activeMeds',
+                    status: activeMeds > 0 ? 'Active' : 'None',
+                    statusColor: activeMeds > 0
+                        ? theme.colorScheme.primary
+                        : PawThemeData.successGreen,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            MedicationsListScreen(initialPetId: pet.id),
+                      ),
+                    ),
+                  );
                 },
-                loading: () => _buildMiniHealthCard(icon: Icons.medication, title: 'Meds', value: '-', status: '...', statusColor: Colors.grey, onTap: () {}),
-                error: (_, __) => _buildMiniHealthCard(icon: Icons.medication, title: 'Meds', value: '!', status: 'Error', statusColor: Colors.red, onTap: () {}),
+                loading: () => _buildMiniHealthCard(
+                  icon: Icons.medication,
+                  title: 'Meds',
+                  value: '-',
+                  status: '...',
+                  statusColor: Colors.grey,
+                  onTap: () {},
+                ),
+                error: (_, __) => _buildMiniHealthCard(
+                  icon: Icons.medication,
+                  title: 'Meds',
+                  value: '!',
+                  status: 'Error',
+                  statusColor: Colors.red,
+                  onTap: () {},
+                ),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildMiniHealthCard(icon: Icons.monitor_weight, title: 'Weight', value: pet.weightKg != null ? '${pet.weightKg!.toStringAsFixed(1)}' : '-', status: pet.weightKg != null ? 'kg' : 'Not set', statusColor: pet.weightKg != null ? PawThemeData.successGreen : Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => WeightHistoryScreen(petId: pet.id, petName: pet.name)))),
+              child: _buildMiniHealthCard(
+                icon: Icons.monitor_weight,
+                title: 'Weight',
+                value: pet.weightKg != null
+                    ? pet.weightKg!.toStringAsFixed(1)
+                    : '-',
+                status: pet.weightKg != null ? 'kg' : 'Not set',
+                statusColor: pet.weightKg != null
+                    ? PawThemeData.successGreen
+                    : Colors.orange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        WeightHistoryScreen(petId: pet.id, petName: pet.name),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -455,7 +544,14 @@ class PetProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMiniHealthCard({required IconData icon, required String title, required String value, required String status, required Color statusColor, required VoidCallback onTap}) {
+  Widget _buildMiniHealthCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required String status,
+    required Color statusColor,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -463,14 +559,30 @@ class PetProfileScreen extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           children: [
             Icon(icon, size: 20, color: statusColor),
             const SizedBox(height: 4),
-            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: statusColor)),
-            Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: statusColor,
+              ),
+            ),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            ),
           ],
         ),
       ),
@@ -951,9 +1063,7 @@ class PetProfileScreen extends ConsumerWidget {
                 onPressed: () => _regenerateLink(context, ref, pet),
                 icon: const Icon(Icons.refresh, size: 18),
                 label: const Text('Regenerate Link'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.orange,
-                ),
+                style: TextButton.styleFrom(foregroundColor: Colors.orange),
               ),
             ),
           ],
@@ -963,7 +1073,11 @@ class PetProfileScreen extends ConsumerWidget {
   }
 
   Future<void> _toggleSharing(
-      BuildContext context, WidgetRef ref, Pet pet, bool enabled) async {
+    BuildContext context,
+    WidgetRef ref,
+    Pet pet,
+    bool enabled,
+  ) async {
     final theme = Theme.of(context);
     final sharingService = SharingService();
     try {
@@ -976,9 +1090,7 @@ class PetProfileScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(enabled
-                ? 'Sharing enabled'
-                : 'Sharing disabled'),
+            content: Text(enabled ? 'Sharing enabled' : 'Sharing disabled'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -1021,7 +1133,10 @@ class PetProfileScreen extends ConsumerWidget {
   }
 
   Future<void> _regenerateLink(
-      BuildContext context, WidgetRef ref, Pet pet) async {
+    BuildContext context,
+    WidgetRef ref,
+    Pet pet,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1136,7 +1251,7 @@ class PetProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
-);
+    );
   }
 
   Future<void> _exportPdf(BuildContext context, WidgetRef ref, Pet pet) async {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/validators.dart';
 import '../../shared/providers/auth_notifier.dart';
 import '../../shared/providers/auth_provider.dart';
@@ -31,11 +30,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _signUp() async {
     if (_formKey.currentState!.validate()) {
-      final success = await ref.read(authNotifierProvider.notifier).signUp(
-            _emailController.text.trim(),
-            _passwordController.text,
-            null,
-          );
+      final success = await ref
+          .read(authNotifierProvider.notifier)
+          .signUp(_emailController.text.trim(), _passwordController.text, null);
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -80,10 +77,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Create Account',
-                  style: theme.textTheme.headlineLarge,
-                ),
+                Text('Create Account', style: theme.textTheme.headlineLarge),
                 const SizedBox(height: 8),
                 Text(
                   'Start managing your pet\'s health today',
@@ -113,9 +107,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                 ),
@@ -124,16 +121,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   textInputAction: TextInputAction.done,
-                  validator: (value) => Validators.confirmPassword(value, _passwordController.text),
+                  validator: (value) => Validators.confirmPassword(
+                    value,
+                    _passwordController.text,
+                  ),
                   onFieldSubmitted: (_) => _signUp(),
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        _obscureConfirmPassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
                       ),
-                      onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      onPressed: () => setState(
+                        () =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword,
+                      ),
                     ),
                   ),
                 ),
@@ -147,12 +152,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
+                        Icon(
+                          Icons.error_outline,
+                          color: theme.colorScheme.error,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             authState.error!,
-                            style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
+                            style: TextStyle(
+                              color: theme.colorScheme.error,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
@@ -166,7 +178,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Create Account'),
                 ),
@@ -176,10 +191,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Expanded(child: Divider(color: theme.dividerTheme.color)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'or',
-                        style: theme.textTheme.labelMedium,
-                      ),
+                      child: Text('or', style: theme.textTheme.labelMedium),
                     ),
                     Expanded(child: Divider(color: theme.dividerTheme.color)),
                   ],
@@ -189,7 +201,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   onPressed: _signInWithGoogle,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: BorderSide(color: theme.dividerTheme.color ?? Colors.grey),
+                    side: BorderSide(
+                      color: theme.dividerTheme.color ?? Colors.grey,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,

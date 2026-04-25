@@ -14,14 +14,11 @@ class AddEditRecordScreen extends ConsumerStatefulWidget {
   final String petId;
   final VetRecord? record;
 
-  const AddEditRecordScreen({
-    super.key,
-    required this.petId,
-    this.record,
-  });
+  const AddEditRecordScreen({super.key, required this.petId, this.record});
 
   @override
-  ConsumerState<AddEditRecordScreen> createState() => _AddEditRecordScreenState();
+  ConsumerState<AddEditRecordScreen> createState() =>
+      _AddEditRecordScreenState();
 }
 
 class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
@@ -109,9 +106,9 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking file: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking file: $e')));
       }
     }
   }
@@ -126,24 +123,25 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception('Not authenticated');
 
-      final fileName = '${user.id}/${DateTime.now().millisecondsSinceEpoch}_${_selectedFileName}';
-      
+      final fileName =
+          '${user.id}/${DateTime.now().millisecondsSinceEpoch}_$_selectedFileName';
+
       await supabase.storage
-        .from('vet-documents')
-        .upload(fileName, _selectedFile!);
+          .from('vet-documents')
+          .upload(fileName, _selectedFile!);
 
       final url = await supabase.storage
-        .from('vet-documents')
-        .createSignedUrl(fileName, 31536000);
+          .from('vet-documents')
+          .createSignedUrl(fileName, 31536000);
 
       setState(() => _isUploading = false);
       return url;
     } catch (e) {
       setState(() => _isUploading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error uploading file: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error uploading file: $e')));
       }
       return null;
     }
@@ -156,7 +154,7 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
 
     try {
       String? uploadedDocUrl;
-      
+
       if (_selectedFile != null) {
         uploadedDocUrl = await _uploadFile();
         if (uploadedDocUrl == null) {
@@ -171,33 +169,34 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
           : null;
 
       if (isEditing) {
-        await ref.read(recordNotifierProvider.notifier).updateRecord(
-              widget.record!.id,
-              {
-                'type': _selectedType,
-                'title': _titleController.text.trim(),
-                'date': _selectedDate.toIso8601String().split('T').first,
-                'vet_name': _vetNameController.text.trim().isNotEmpty
-                    ? _vetNameController.text.trim()
-                    : null,
-                'clinic_name': _clinicController.text.trim().isNotEmpty
-                    ? _clinicController.text.trim()
-                    : null,
-                'diagnosis': _diagnosisController.text.trim().isNotEmpty
-                    ? _diagnosisController.text.trim()
-                    : null,
-                'treatment': _treatmentController.text.trim().isNotEmpty
-                    ? _treatmentController.text.trim()
-                    : null,
-                'notes': _notesController.text.trim().isNotEmpty
-                    ? _notesController.text.trim()
-                    : null,
-                'doc_url': docUrlToSave,
-                'cost': cost,
-              },
-            );
+        await ref
+            .read(recordNotifierProvider.notifier)
+            .updateRecord(widget.record!.id, {
+              'type': _selectedType,
+              'title': _titleController.text.trim(),
+              'date': _selectedDate.toIso8601String().split('T').first,
+              'vet_name': _vetNameController.text.trim().isNotEmpty
+                  ? _vetNameController.text.trim()
+                  : null,
+              'clinic_name': _clinicController.text.trim().isNotEmpty
+                  ? _clinicController.text.trim()
+                  : null,
+              'diagnosis': _diagnosisController.text.trim().isNotEmpty
+                  ? _diagnosisController.text.trim()
+                  : null,
+              'treatment': _treatmentController.text.trim().isNotEmpty
+                  ? _treatmentController.text.trim()
+                  : null,
+              'notes': _notesController.text.trim().isNotEmpty
+                  ? _notesController.text.trim()
+                  : null,
+              'doc_url': docUrlToSave,
+              'cost': cost,
+            });
       } else {
-        await ref.read(recordNotifierProvider.notifier).createRecord(
+        await ref
+            .read(recordNotifierProvider.notifier)
+            .createRecord(
               petId: widget.petId,
               type: _selectedType,
               title: _titleController.text.trim(),
@@ -225,9 +224,9 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -281,7 +280,8 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
                 labelText: 'Title *',
                 prefixIcon: Icon(Icons.title),
               ),
-              validator: (v) => v?.trim().isEmpty == true ? 'Title is required' : null,
+              validator: (v) =>
+                  v?.trim().isEmpty == true ? 'Title is required' : null,
             ),
             const SizedBox(height: 16),
             ListTile(
@@ -360,27 +360,43 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
 
   String _getTypeEmoji(String type) {
     switch (type) {
-      case 'checkup': return '🩺';
-      case 'surgery': return '💉';
-      case 'illness': return '🤒';
-      case 'injury': return '🩹';
-      case 'dental': return '🦷';
-      case 'grooming': return '✨';
-      case 'lab_result': return '🧪';
-      default: return '📋';
+      case 'checkup':
+        return '🩺';
+      case 'surgery':
+        return '💉';
+      case 'illness':
+        return '🤒';
+      case 'injury':
+        return '🩹';
+      case 'dental':
+        return '🦷';
+      case 'grooming':
+        return '✨';
+      case 'lab_result':
+        return '🧪';
+      default:
+        return '📋';
     }
   }
 
   String _getTypeLabel(String type) {
     switch (type) {
-      case 'checkup': return 'Checkup';
-      case 'surgery': return 'Surgery';
-      case 'illness': return 'Illness';
-      case 'injury': return 'Injury';
-      case 'dental': return 'Dental';
-      case 'grooming': return 'Grooming';
-      case 'lab_result': return 'Lab Result';
-      default: return 'Other';
+      case 'checkup':
+        return 'Checkup';
+      case 'surgery':
+        return 'Surgery';
+      case 'illness':
+        return 'Illness';
+      case 'injury':
+        return 'Injury';
+      case 'dental':
+        return 'Dental';
+      case 'grooming':
+        return 'Grooming';
+      case 'lab_result':
+        return 'Lab Result';
+      default:
+        return 'Other';
     }
   }
 
@@ -405,10 +421,7 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
             children: [
               Icon(Icons.attach_file, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
-              Text(
-                'Document',
-                style: theme.textTheme.titleMedium,
-              ),
+              Text('Document', style: theme.textTheme.titleMedium),
               const Spacer(),
               if (_isUploading)
                 const SizedBox(
@@ -466,7 +479,7 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
                       child: CircularProgressIndicator(
                         value: loadingProgress.expectedTotalBytes != null
                             ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
+                                  loadingProgress.expectedTotalBytes!
                             : null,
                       ),
                     ),
@@ -501,10 +514,7 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(
-                  Icons.description,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.description, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -521,8 +531,7 @@ class _AddEditRecordScreenState extends ConsumerState<AddEditRecordScreen> {
                 ),
               ],
             ),
-          ]
-          else
+          ] else
             OutlinedButton.icon(
               onPressed: _isUploading ? null : _pickFile,
               icon: const Icon(Icons.upload_file),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme_data.dart';
 import '../../core/utils/date_utils.dart';
 import '../../core/utils/feature_gate.dart';
@@ -13,7 +12,6 @@ import '../../shared/providers/medication_provider.dart';
 import '../../shared/providers/user_provider.dart';
 import '../../features/vaccines/vaccines_list_screen.dart';
 import '../../features/medications/medications_list_screen.dart';
-import '../../features/appointments/appointments_screen.dart';
 import '../../features/pets/add_edit_pet_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {

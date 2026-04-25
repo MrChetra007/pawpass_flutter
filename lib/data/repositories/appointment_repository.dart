@@ -6,7 +6,10 @@ class AppointmentRepository {
 
   AppointmentRepository(this._supabase);
 
-  Future<List<Appointment>> getAppointments({String? petId, String? status}) async {
+  Future<List<Appointment>> getAppointments({
+    String? petId,
+    String? status,
+  }) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
@@ -21,11 +24,11 @@ class AppointmentRepository {
         .toList();
 
     var filtered = appointments;
-    
+
     if (petId != null) {
       filtered = filtered.where((a) => a.petId == petId).toList();
     }
-    
+
     if (status != null) {
       filtered = filtered.where((a) => a.status == status).toList();
     }
@@ -61,7 +64,7 @@ class AppointmentRepository {
         .maybeSingle();
 
     if (response == null) return null;
-    return Appointment.fromJson(response as Map<String, dynamic>);
+    return Appointment.fromJson(response);
   }
 
   Future<Appointment> createAppointment({
@@ -92,11 +95,18 @@ class AppointmentRepository {
       'status': 'upcoming',
     };
 
-    final response = await _supabase.from('appointments').insert(data).select().single();
-    return Appointment.fromJson(response as Map<String, dynamic>);
+    final response = await _supabase
+        .from('appointments')
+        .insert(data)
+        .select()
+        .single();
+    return Appointment.fromJson(response);
   }
 
-  Future<Appointment> updateAppointment(String id, Map<String, dynamic> data) async {
+  Future<Appointment> updateAppointment(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await _supabase
         .from('appointments')
         .update(data)
@@ -104,7 +114,7 @@ class AppointmentRepository {
         .select()
         .single();
 
-    return Appointment.fromJson(response as Map<String, dynamic>);
+    return Appointment.fromJson(response);
   }
 
   Future<void> deleteAppointment(String id) async {

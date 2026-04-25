@@ -276,17 +276,19 @@ class _PdfPreviewPageState extends State<_PdfPreviewPage> {
         },
       );
 
-      if (mounted)
+      if (mounted) {
         setState(() {
           _localPath = path;
           _state = _PreviewState.ready;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = e.toString();
           _state = _PreviewState.error;
         });
+      }
     }
   }
 

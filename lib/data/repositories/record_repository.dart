@@ -19,11 +19,11 @@ class RecordRepository {
     final records = (response as List)
         .map((json) => VetRecord.fromJson(json as Map<String, dynamic>))
         .toList();
-    
+
     if (petId != null) {
       return records.where((r) => r.petId == petId).toList();
     }
-    
+
     return records;
   }
 
@@ -35,7 +35,7 @@ class RecordRepository {
         .maybeSingle();
 
     if (response == null) return null;
-    return VetRecord.fromJson(response as Map<String, dynamic>);
+    return VetRecord.fromJson(response);
   }
 
   Future<VetRecord> createRecord({
@@ -69,8 +69,12 @@ class RecordRepository {
       if (cost != null) 'cost': cost,
     };
 
-    final response = await _supabase.from('vet_records').insert(data).select().single();
-    return VetRecord.fromJson(response as Map<String, dynamic>);
+    final response = await _supabase
+        .from('vet_records')
+        .insert(data)
+        .select()
+        .single();
+    return VetRecord.fromJson(response);
   }
 
   Future<VetRecord> updateRecord(String id, Map<String, dynamic> data) async {
@@ -81,7 +85,7 @@ class RecordRepository {
         .select()
         .single();
 
-    return VetRecord.fromJson(response as Map<String, dynamic>);
+    return VetRecord.fromJson(response);
   }
 
   Future<void> deleteRecord(String id) async {

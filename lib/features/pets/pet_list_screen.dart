@@ -5,7 +5,6 @@ import '../../data/models/pet_model.dart';
 import '../../shared/providers/pet_provider.dart';
 import '../../shared/providers/user_provider.dart';
 import '../../shared/widgets/empty_state.dart';
-import '../../shared/widgets/paw_card.dart';
 import '../../shared/widgets/skeleton_loader.dart';
 import '../../shared/widgets/upgrade_modal.dart';
 import 'add_edit_pet_screen.dart';

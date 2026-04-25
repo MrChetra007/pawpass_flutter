@@ -17,7 +17,7 @@ class IAPService {
   bool _isAvailable = false;
   bool get isAvailable => _isAvailable;
 
-  Set<String> _productIds = {_proProductId, _premiumProductId};
+  final Set<String> _productIds = {_proProductId, _premiumProductId};
   List<ProductDetails> _products = [];
 
   List<ProductDetails> get products => _products;
@@ -46,7 +46,9 @@ class IAPService {
     );
   }
 
-  Future<void> _handlePurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) async {
+  Future<void> _handlePurchaseUpdated(
+    List<PurchaseDetails> purchaseDetailsList,
+  ) async {
     for (final purchase in purchaseDetailsList) {
       if (purchase.status == PurchaseStatus.error) {
         debugPrint('Purchase error: ${purchase.error?.message}');
@@ -87,15 +89,20 @@ class IAPService {
       final platform = defaultTargetPlatform == TargetPlatform.iOS
           ? 'ios'
           : 'android';
-      final receiptKey =
-          platform == 'ios' ? 'iap_receipt_ios' : 'iap_receipt_android';
+      final receiptKey = platform == 'ios'
+          ? 'iap_receipt_ios'
+          : 'iap_receipt_android';
 
-      await supabase.from('users').update({
-        'plan': plan,
-        'plan_expires_at':
-            DateTime.now().add(const Duration(days: 30)).toIso8601String(),
-        receiptKey: purchase.verificationData?.serverVerificationData,
-      }).eq('id', user.id);
+      await supabase
+          .from('users')
+          .update({
+            'plan': plan,
+            'plan_expires_at': DateTime.now()
+                .add(const Duration(days: 30))
+                .toIso8601String(),
+            receiptKey: purchase.verificationData.serverVerificationData,
+          })
+          .eq('id', user.id);
 
       debugPrint('IAP: Plan upgraded to $plan');
     } catch (e) {

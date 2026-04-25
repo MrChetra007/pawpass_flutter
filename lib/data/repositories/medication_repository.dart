@@ -6,7 +6,10 @@ class MedicationRepository {
 
   MedicationRepository(this._supabase);
 
-  Future<List<Medication>> getMedications({String? petId, bool? activeOnly}) async {
+  Future<List<Medication>> getMedications({
+    String? petId,
+    bool? activeOnly,
+  }) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
@@ -39,7 +42,7 @@ class MedicationRepository {
         .maybeSingle();
 
     if (response == null) return null;
-    return Medication.fromJson(response as Map<String, dynamic>);
+    return Medication.fromJson(response);
   }
 
   Future<Medication> createMedication({
@@ -69,18 +72,27 @@ class MedicationRepository {
       if (frequencyType != null) 'frequency_type': frequencyType,
       if (frequencyTimes != null) 'frequency_times': frequencyTimes,
       if (timeOfDay != null && timeOfDay.isNotEmpty) 'time_of_day': timeOfDay,
-      if (startDate != null) 'start_date': startDate.toIso8601String().split('T').first,
-      if (endDate != null) 'end_date': endDate.toIso8601String().split('T').first,
+      if (startDate != null)
+        'start_date': startDate.toIso8601String().split('T').first,
+      if (endDate != null)
+        'end_date': endDate.toIso8601String().split('T').first,
       if (prescribedBy != null) 'prescribed_by': prescribedBy,
       if (notes != null) 'notes': notes,
       'is_active': true,
     };
 
-    final response = await _supabase.from('medications').insert(data).select().single();
-    return Medication.fromJson(response as Map<String, dynamic>);
+    final response = await _supabase
+        .from('medications')
+        .insert(data)
+        .select()
+        .single();
+    return Medication.fromJson(response);
   }
 
-  Future<Medication> updateMedication(String id, Map<String, dynamic> data) async {
+  Future<Medication> updateMedication(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await _supabase
         .from('medications')
         .update(data)
@@ -88,7 +100,7 @@ class MedicationRepository {
         .select()
         .single();
 
-    return Medication.fromJson(response as Map<String, dynamic>);
+    return Medication.fromJson(response);
   }
 
   Future<void> deleteMedication(String id) async {

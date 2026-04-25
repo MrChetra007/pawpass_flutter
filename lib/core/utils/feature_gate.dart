@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/providers/user_provider.dart';
 import '../../shared/widgets/upgrade_modal.dart';
-import '../theme/app_theme_data.dart';
 
 class FeatureGate {
   static Future<bool> check({

@@ -406,7 +406,7 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
   }
 
   Widget _buildFaqItem(_FaqItem faq, ThemeData theme, bool isLast) {
-    final itemKey = '${faq.question}';
+    final itemKey = faq.question;
     final isExpanded = _expandedItems[itemKey] ?? false;
 
     return Column(

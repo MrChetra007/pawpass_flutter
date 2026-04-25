@@ -673,8 +673,9 @@ class _DocPreviewOverlayState extends State<_DocPreviewOverlay>
     } catch (e) {
       controller.close();
       progressNotifier.dispose();
-      if (context.mounted)
+      if (context.mounted) {
         messenger.showSnackBar(SnackBar(content: Text('Download failed: $e')));
+      }
     }
   }
 }

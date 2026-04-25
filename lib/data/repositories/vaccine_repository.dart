@@ -35,7 +35,7 @@ class VaccineRepository {
         .maybeSingle();
 
     if (response == null) return null;
-    return Vaccine.fromJson(response as Map<String, dynamic>);
+    return Vaccine.fromJson(response);
   }
 
   Future<Vaccine> createVaccine({
@@ -57,7 +57,8 @@ class VaccineRepository {
       'user_id': user.id,
       'name': name,
       'date_given': dateGiven.toIso8601String().split('T').first,
-      if (nextDueDate != null) 'next_due_date': nextDueDate.toIso8601String().split('T').first,
+      if (nextDueDate != null)
+        'next_due_date': nextDueDate.toIso8601String().split('T').first,
       if (vetName != null) 'vet_name': vetName,
       if (clinicName != null) 'clinic_name': clinicName,
       if (batchNumber != null) 'batch_number': batchNumber,
@@ -65,8 +66,12 @@ class VaccineRepository {
       if (notes != null) 'notes': notes,
     };
 
-    final response = await _supabase.from('vaccines').insert(data).select().single();
-    return Vaccine.fromJson(response as Map<String, dynamic>);
+    final response = await _supabase
+        .from('vaccines')
+        .insert(data)
+        .select()
+        .single();
+    return Vaccine.fromJson(response);
   }
 
   Future<Vaccine> updateVaccine(String id, Map<String, dynamic> data) async {
@@ -77,7 +82,7 @@ class VaccineRepository {
         .select()
         .single();
 
-    return Vaccine.fromJson(response as Map<String, dynamic>);
+    return Vaccine.fromJson(response);
   }
 
   Future<void> deleteVaccine(String id) async {
@@ -92,6 +97,6 @@ class VaccineRepository {
         .select()
         .single();
 
-    return Vaccine.fromJson(response as Map<String, dynamic>);
+    return Vaccine.fromJson(response);
   }
 }

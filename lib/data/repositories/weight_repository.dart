@@ -37,7 +37,7 @@ class WeightRepository {
         .maybeSingle();
 
     if (response == null) return null;
-    return WeightLog.fromJson(response as Map<String, dynamic>);
+    return WeightLog.fromJson(response);
   }
 
   Future<WeightLog> createWeightLog({
@@ -57,11 +57,18 @@ class WeightRepository {
       if (notes != null) 'notes': notes,
     };
 
-    final response = await _supabase.from('weight_logs').insert(data).select().single();
-    return WeightLog.fromJson(response as Map<String, dynamic>);
+    final response = await _supabase
+        .from('weight_logs')
+        .insert(data)
+        .select()
+        .single();
+    return WeightLog.fromJson(response);
   }
 
-  Future<WeightLog> updateWeightLog(String id, Map<String, dynamic> data) async {
+  Future<WeightLog> updateWeightLog(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await _supabase
         .from('weight_logs')
         .update(data)
@@ -69,7 +76,7 @@ class WeightRepository {
         .select()
         .single();
 
-    return WeightLog.fromJson(response as Map<String, dynamic>);
+    return WeightLog.fromJson(response);
   }
 
   Future<void> deleteWeightLog(String id) async {

@@ -30,7 +30,7 @@ class PetRepository {
         .maybeSingle();
 
     if (response == null) return null;
-    return Pet.fromJson(response as Map<String, dynamic>);
+    return Pet.fromJson(response);
   }
 
   Future<Pet> createPet({
@@ -69,7 +69,7 @@ class PetRepository {
         .insert(data)
         .select()
         .single();
-    return Pet.fromJson(response as Map<String, dynamic>);
+    return Pet.fromJson(response);
   }
 
   Future<Pet> updatePet(String id, Map<String, dynamic> data) async {
@@ -80,7 +80,7 @@ class PetRepository {
         .select()
         .single();
 
-    return Pet.fromJson(response as Map<String, dynamic>);
+    return Pet.fromJson(response);
   }
 
   Future<void> deletePet(String id) async {

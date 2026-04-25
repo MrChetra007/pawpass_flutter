@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -55,7 +54,7 @@ class ThemeNotifier extends Notifier<PawTheme> {
   Future<void> setTheme(PawTheme theme) async {
     _loadedTheme = theme;
     state = theme;
-    
+
     try {
       final prefs = ref.read(sharedPreferencesProvider);
       await prefs.setString(_key, theme.name);
@@ -65,7 +64,10 @@ class ThemeNotifier extends Notifier<PawTheme> {
       final supabase = Supabase.instance.client;
       final uid = supabase.auth.currentUser?.id;
       if (uid != null) {
-        await supabase.from('users').update({'theme': theme.name}).eq('id', uid);
+        await supabase
+            .from('users')
+            .update({'theme': theme.name})
+            .eq('id', uid);
       }
     } catch (_) {}
   }

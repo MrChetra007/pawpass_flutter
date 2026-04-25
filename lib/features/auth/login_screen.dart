@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/validators.dart';
 import '../../shared/providers/auth_notifier.dart';
 import '../../shared/providers/auth_provider.dart';
-import 'register_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -29,10 +28,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _signIn() async {
     if (_formKey.currentState!.validate()) {
-      final success = await ref.read(authNotifierProvider.notifier).signIn(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
+      final success = await ref
+          .read(authNotifierProvider.notifier)
+          .signIn(_emailController.text.trim(), _passwordController.text);
       if (success && mounted) {
         final supabase = Supabase.instance.client;
         final user = supabase.auth.currentUser;
@@ -42,7 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               .select('is_onboarding')
               .eq('id', user.id)
               .maybeSingle();
-          
+
           final isOnboarding = userData?['is_onboarding'] as bool? ?? true;
           if (isOnboarding && mounted) {
             context.go('/onboarding');
@@ -123,16 +121,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
-                  validator: (value) => Validators.required(value, fieldName: 'Password'),
+                  validator: (value) =>
+                      Validators.required(value, fieldName: 'Password'),
                   onFieldSubmitted: (_) => _signIn(),
                   decoration: InputDecoration(
                     labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                 ),
@@ -146,12 +148,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
+                        Icon(
+                          Icons.error_outline,
+                          color: theme.colorScheme.error,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             authState.error!,
-                            style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
+                            style: TextStyle(
+                              color: theme.colorScheme.error,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
@@ -173,7 +182,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Sign In'),
                 ),
@@ -183,10 +195,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Expanded(child: Divider(color: theme.dividerTheme.color)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'or',
-                        style: theme.textTheme.labelMedium,
-                      ),
+                      child: Text('or', style: theme.textTheme.labelMedium),
                     ),
                     Expanded(child: Divider(color: theme.dividerTheme.color)),
                   ],
@@ -196,7 +205,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onPressed: _signInWithGoogle,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: BorderSide(color: theme.dividerTheme.color ?? Colors.grey),
+                    side: BorderSide(
+                      color: theme.dividerTheme.color ?? Colors.grey,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,

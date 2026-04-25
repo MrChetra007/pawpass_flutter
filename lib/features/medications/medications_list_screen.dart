@@ -7,7 +7,6 @@ import '../../shared/providers/medication_provider.dart';
 import '../../shared/providers/pet_provider.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/skeleton_loader.dart';
-import '../../shared/widgets/upgrade_modal.dart';
 import 'add_edit_medication_screen.dart';
 
 class MedicationsListScreen extends ConsumerStatefulWidget {
@@ -16,7 +15,8 @@ class MedicationsListScreen extends ConsumerStatefulWidget {
   const MedicationsListScreen({super.key, this.initialPetId});
 
   @override
-  ConsumerState<MedicationsListScreen> createState() => _MedicationsListScreenState();
+  ConsumerState<MedicationsListScreen> createState() =>
+      _MedicationsListScreenState();
 }
 
 class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
@@ -72,9 +72,15 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Medications', style: theme.textTheme.headlineMedium),
+                      Text(
+                        'Medications',
+                        style: theme.textTheme.headlineMedium,
+                      ),
                       const SizedBox(height: 4),
-                      Text('Track your pet\'s medications', style: theme.textTheme.labelLarge),
+                      Text(
+                        'Track your pet\'s medications',
+                        style: theme.textTheme.labelLarge,
+                      ),
                     ],
                   ),
                 ),
@@ -92,7 +98,9 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                 data: (medications) {
                   var filteredMeds = medications;
                   if (_selectedPetId != null) {
-                    filteredMeds = filteredMeds.where((m) => m.petId == _selectedPetId).toList();
+                    filteredMeds = filteredMeds
+                        .where((m) => m.petId == _selectedPetId)
+                        .toList();
                   }
 
                   if (filteredMeds.isEmpty) {
@@ -107,8 +115,12 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
 
                   _listAnimationController.forward();
 
-                  final activeMeds = filteredMeds.where((m) => m.isActive).toList();
-                  final inactiveMeds = filteredMeds.where((m) => !m.isActive).toList();
+                  final activeMeds = filteredMeds
+                      .where((m) => m.isActive)
+                      .toList();
+                  final inactiveMeds = filteredMeds
+                      .where((m) => !m.isActive)
+                      .toList();
 
                   return ListView(
                     padding: const EdgeInsets.all(16),
@@ -116,31 +128,47 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                       if (activeMeds.isNotEmpty) ...[
                         FadeTransition(
                           opacity: _fadeAnimation,
-                          child: _buildSectionHeader(context, 'Active', activeMeds.length),
+                          child: _buildSectionHeader(
+                            context,
+                            'Active',
+                            activeMeds.length,
+                          ),
                         ),
                         const SizedBox(height: 12),
-                        ...activeMeds.map((med) => FadeTransition(
-                              opacity: _fadeAnimation,
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _buildMedicationCard(med, petsAsync, true),
-                              ),
-                            )),
+                        ...activeMeds.map(
+                          (med) => FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _buildMedicationCard(med, petsAsync, true),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 24),
                       ],
                       if (inactiveMeds.isNotEmpty) ...[
                         FadeTransition(
                           opacity: _fadeAnimation,
-                          child: _buildSectionHeader(context, 'Inactive', inactiveMeds.length),
+                          child: _buildSectionHeader(
+                            context,
+                            'Inactive',
+                            inactiveMeds.length,
+                          ),
                         ),
                         const SizedBox(height: 12),
-                        ...inactiveMeds.map((med) => FadeTransition(
-                              opacity: _fadeAnimation,
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _buildMedicationCard(med, petsAsync, false),
+                        ...inactiveMeds.map(
+                          (med) => FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _buildMedicationCard(
+                                med,
+                                petsAsync,
+                                false,
                               ),
-                            )),
+                            ),
+                          ),
+                        ),
                       ],
                     ],
                   );
@@ -182,10 +210,7 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
             color: theme.colorScheme.secondary.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Text(
-            '$count',
-            style: theme.textTheme.labelMedium,
-          ),
+          child: Text('$count', style: theme.textTheme.labelMedium),
         ),
       ],
     );
@@ -207,19 +232,25 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                 child: ChoiceChip(
                   label: const Text('All Pets'),
                   selected: _selectedPetId == null,
-                  selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+                  selectedColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.2,
+                  ),
                   onSelected: (_) => setState(() => _selectedPetId = null),
                 ),
               ),
-              ...pets.map((pet) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(pet.name),
-                      selected: _selectedPetId == pet.id,
-                      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
-                      onSelected: (_) => setState(() => _selectedPetId = pet.id),
+              ...pets.map(
+                (pet) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(pet.name),
+                    selected: _selectedPetId == pet.id,
+                    selectedColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.2,
                     ),
-                  )),
+                    onSelected: (_) => setState(() => _selectedPetId = pet.id),
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -245,12 +276,17 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Theme.of(context).colorScheme.error,
+          ),
           const SizedBox(height: 16),
           Text('Error: $error'),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => ref.read(medicationNotifierProvider.notifier).loadMedications(),
+            onPressed: () =>
+                ref.read(medicationNotifierProvider.notifier).loadMedications(),
             child: const Text('Retry'),
           ),
         ],
@@ -258,7 +294,11 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
     );
   }
 
-  Widget _buildMedicationCard(Medication medication, AsyncValue<List> petsAsync, bool isActive) {
+  Widget _buildMedicationCard(
+    Medication medication,
+    AsyncValue<List> petsAsync,
+    bool isActive,
+  ) {
     final theme = Theme.of(context);
     final color = isActive ? PawThemeData.successGreen : Colors.grey;
 
@@ -291,11 +331,7 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                 color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                Icons.medication,
-                color: color,
-                size: 24,
-              ),
+              child: Icon(Icons.medication, color: color, size: 24),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -304,16 +340,24 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                 children: [
                   Text(
                     medication.name,
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.pets, size: 14, color: theme.colorScheme.primary),
+                      Icon(
+                        Icons.pets,
+                        size: 14,
+                        color: theme.colorScheme.primary,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         petName,
-                        style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.primary),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                     ],
                   ),
@@ -321,7 +365,11 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                   Row(
                     children: [
                       if (medication.dosage != null) ...[
-                        Icon(Icons.science, size: 14, color: theme.textTheme.labelMedium?.color),
+                        Icon(
+                          Icons.science,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           medication.dosage!,
@@ -330,7 +378,11 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                         const SizedBox(width: 12),
                       ],
                       if (medication.frequency != null) ...[
-                        Icon(Icons.schedule, size: 14, color: theme.textTheme.labelMedium?.color),
+                        Icon(
+                          Icons.schedule,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           medication.frequencyLabel,
@@ -343,7 +395,11 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.event, size: 14, color: theme.textTheme.labelMedium?.color),
+                        Icon(
+                          Icons.event,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Until ${DateFormat('MMM d').format(medication.endDate!)}',
@@ -356,7 +412,11 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.repeat, size: 14, color: theme.textTheme.labelMedium?.color),
+                        Icon(
+                          Icons.repeat,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${medication.frequencyTimes ?? 1}x ${medication.frequencyType}',
@@ -374,11 +434,16 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                       ],
                     ),
                   ],
-                  if (medication.mealTiming != null && medication.mealTiming != 'any') ...[
+                  if (medication.mealTiming != null &&
+                      medication.mealTiming != 'any') ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.restaurant, size: 14, color: theme.textTheme.labelMedium?.color),
+                        Icon(
+                          Icons.restaurant,
+                          size: 14,
+                          color: theme.textTheme.labelMedium?.color,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           medication.mealTimingLabel,
@@ -390,12 +455,7 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
                 ],
               ),
             ),
-            if (isActive)
-              Icon(
-                Icons.circle,
-                color: color,
-                size: 10,
-              ),
+            if (isActive) Icon(Icons.circle, color: color, size: 10),
           ],
         ),
       ),
@@ -416,7 +476,9 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              ref.read(medicationNotifierProvider.notifier).deleteMedication(medication.id);
+              ref
+                  .read(medicationNotifierProvider.notifier)
+                  .deleteMedication(medication.id);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -428,9 +490,9 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
   void _showAddMedication(AsyncValue<List> petsAsync) {
     petsAsync.whenData((pets) {
       if (pets.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Add a pet first')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Add a pet first')));
         return;
       }
 
@@ -438,7 +500,8 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AddEditMedicationScreen(petId: _selectedPetId!),
+            builder: (context) =>
+                AddEditMedicationScreen(petId: _selectedPetId!),
           ),
         );
       } else {
@@ -461,27 +524,29 @@ class _MedicationsListScreenState extends ConsumerState<MedicationsListScreen>
           children: [
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Text(
-                'Select Pet',
-                style: theme.textTheme.titleLarge,
+              child: Text('Select Pet', style: theme.textTheme.titleLarge),
+            ),
+            ...pets.map(
+              (pet) => ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.1,
+                  ),
+                  child: Text(pet.speciesEmoji),
+                ),
+                title: Text(pet.name),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          AddEditMedicationScreen(petId: pet.id),
+                    ),
+                  );
+                },
               ),
             ),
-            ...pets.map((pet) => ListTile(
-              leading: CircleAvatar(
-                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-                child: Text(pet.speciesEmoji),
-              ),
-              title: Text(pet.name),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddEditMedicationScreen(petId: pet.id),
-                  ),
-                );
-              },
-            )),
             const SizedBox(height: 16),
           ],
         ),
@@ -512,7 +577,8 @@ class _AnimatedFab extends StatefulWidget {
   State<_AnimatedFab> createState() => _AnimatedFabState();
 }
 
-class _AnimatedFabState extends State<_AnimatedFab> with SingleTickerProviderStateMixin {
+class _AnimatedFabState extends State<_AnimatedFab>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -523,7 +589,10 @@ class _AnimatedFabState extends State<_AnimatedFab> with SingleTickerProviderSta
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override

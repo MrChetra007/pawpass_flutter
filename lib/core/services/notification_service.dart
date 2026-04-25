@@ -196,7 +196,7 @@ class NotificationService {
       nextNotificationDate ??= scheduledDate;
 
       await notifications.zonedSchedule(
-        id: _generateId('med_${timeSlot}', medicationId),
+        id: _generateId('med_$timeSlot', medicationId),
         title: 'Medication Reminder',
         body: _buildMedicationBody(petName, medicationName, dosage, timeSlot),
         scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
