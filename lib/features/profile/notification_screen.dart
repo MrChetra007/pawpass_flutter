@@ -9,15 +9,15 @@ import '../../data/repositories/vaccine_repository.dart';
 import '../../data/repositories/medication_repository.dart';
 import '../../data/repositories/pet_repository.dart';
 
-class TestNotificationsScreen extends StatefulWidget {
-  const TestNotificationsScreen({super.key});
+class NotificationScreen extends StatefulWidget {
+  const NotificationScreen({super.key});
 
   @override
-  State<TestNotificationsScreen> createState() =>
-      _TestNotificationsScreenState();
+  State<NotificationScreen> createState() =>
+      _NotificationScreenState();
 }
 
-class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
+class _NotificationScreenState extends State<NotificationScreen> {
   bool _notificationsEnabled = true;
   List<PendingNotificationRequest> _pendingNotifications = [];
   bool _loadingPending = false;
@@ -71,7 +71,13 @@ class _TestNotificationsScreenState extends State<TestNotificationsScreen> {
     setState(() {
       _notificationsEnabled = value;
     });
-    if (!value && mounted) {
+
+    if (value && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Notifications enabled! Rescheduling reminders...')),
+      );
+      await _rescheduleAllReminders(context);
+    } else if (!value && mounted) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Notifications disabled')));

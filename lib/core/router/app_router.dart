@@ -23,7 +23,7 @@ import '../../features/medications/medications_list_screen.dart';
 import '../../features/weight/weight_history_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/theme_picker_screen.dart';
-import '../../features/profile/test_notifications_screen.dart';
+import '../../features/profile/notification_screen.dart';
 import '../../features/profile/help_faq_screen.dart';
 import '../../features/profile/privacy_policy_screen.dart';
 import '../../features/profile/terms_of_service_screen.dart';
@@ -222,8 +222,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ThemePickerScreen(),
           ),
           GoRoute(
-            path: '/profile/test-notifications',
-            builder: (context, state) => const TestNotificationsScreen(),
+            path: '/profile/notifications',
+            builder: (context, state) => const NotificationScreen(),
           ),
           GoRoute(
             path: '/profile/help-faq',

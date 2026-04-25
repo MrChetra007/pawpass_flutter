@@ -299,7 +299,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             icon: Icons.notifications_outlined,
             title: 'Notifications',
             subtitle: _notificationsEnabled ? 'Enabled' : 'Disabled',
-            onTap: () => context.push('/profile/test-notifications'),
+            onTap: () => context.push('/profile/notifications'),
           ),
           _buildDivider(),
           _buildSettingsTile(
