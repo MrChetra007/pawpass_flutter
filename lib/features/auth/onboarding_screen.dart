@@ -1,12 +1,12 @@
 import 'dart:io' show File, InternetAddress;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/notification_service.dart' show NotificationService;
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -81,13 +81,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (image != null) {
       setState(() => _petPhotoPath = image.path);
     }
-  }
-
-  Future<void> _requestNotificationPermission() async {
-    final plugin = FlutterLocalNotificationsPlugin();
-    final android = plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    await android?.requestNotificationsPermission();
   }
 
   Future<bool> _checkConnection() async {
@@ -204,12 +197,44 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
 
       if (_enableNotifications) {
-        await _requestNotificationPermission();
+        final granted = await NotificationService().requestPermission();
+        if (granted) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('notification_permission_requested', true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Notifications enabled!')),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Permission denied. Enable in device settings.')),
+            );
+          }
+        }
       }
 
       if (!await _checkConnection()) {
         await _showNoConnectionDialog();
         return;
+      }
+
+      bool notificationsGranted = false;
+      if (_enableNotifications) {
+        notificationsGranted = await NotificationService().requestPermission();
+        if (notificationsGranted) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('notification_permission_requested', true);
+        }
+      }
+
+      if (!notificationsGranted && _enableNotifications) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Notifications disabled. Enable in device settings to receive reminders.')),
+          );
+        }
       }
 
       String? petPhotoUrl;
@@ -227,17 +252,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }).select('id').single();
 
       if (_addVaccine) {
+        final dueDate = DateTime.now().add(const Duration(days: 365));
         await supabase.from('vaccines').insert({
           'pet_id': petId['id'],
-          'name': '${_selectedSpecies == 'Dog' ? 'DHPP' : 'FVRCP'}',
-          'due_date': DateTime.now().add(const Duration(days: 365)).toIso8601String(),
-          'status': 'scheduled',
+          'user_id': user.id,
+          'name': _selectedSpecies == 'Dog' ? 'DHPP' : 'FVRCP',
+          'date_given': DateTime.now().toIso8601String().split('T').first,
+          'next_due_date': dueDate.toIso8601String().split('T').first,
         });
+        if (notificationsGranted) {
+          await NotificationService().scheduleVaccineReminder(
+            vaccineId: petId['id'],
+            petName: _petNameController.text.trim(),
+            vaccineName: _selectedSpecies == 'Dog' ? 'DHPP' : 'FVRCP',
+            dueDate: dueDate,
+          );
+        }
       }
 
       if (_addMedication) {
         await supabase.from('medications').insert({
           'pet_id': petId['id'],
+          'user_id': user.id,
           'name': 'Flea Prevention',
           'dosage': 'Monthly',
           'frequency': 'monthly',
@@ -246,12 +282,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
 
       if (_addAppointment) {
+        final appointmentDate = DateTime.now().add(const Duration(days: 7));
         await supabase.from('appointments').insert({
           'pet_id': petId['id'],
+          'user_id': user.id,
           'title': 'First Vet Checkup',
-          'date': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
-          'type': 'checkup',
+          'datetime': appointmentDate.toIso8601String(),
+          'type': 'vet',
         });
+        if (notificationsGranted) {
+          await NotificationService().scheduleAppointmentReminder(
+            appointmentId: petId['id'],
+            petName: _petNameController.text.trim(),
+            title: 'First Vet Checkup',
+            appointmentDate: appointmentDate,
+          );
+        }
       }
 
       await supabase.from('users').update({

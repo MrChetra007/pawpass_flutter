@@ -33,7 +33,6 @@ Future<void> main() async {
 
   await IAPService().initialize();
   await NotificationService().initialize();
-  await _requestNotificationPermission();
 
   final prefs = await SharedPreferences.getInstance();
 
@@ -43,16 +42,6 @@ Future<void> main() async {
       child: const PawPassApp(),
     ),
   );
-}
-
-Future<void> _requestNotificationPermission() async {
-  final notificationService = NotificationService();
-  final shouldRequest = await notificationService.shouldRequestPermission();
-
-  if (shouldRequest) {
-    await notificationService.requestPermission();
-    await notificationService.markPermissionRequested();
-  }
 }
 
 Future<void> rescheduleAllReminders(WidgetRef ref) async {
