@@ -194,7 +194,7 @@ class _UpgradeModalState extends State<UpgradeModal>
                           _buildPlanCard(
                             context,
                             title: 'Pro Plan',
-                            price: '\$4.99',
+                            price: '\$2.99',
                             period: '/month',
                             description: 'Perfect for single pet owners',
                             isPopular: false,
@@ -205,7 +205,7 @@ class _UpgradeModalState extends State<UpgradeModal>
                           _buildPlanCard(
                             context,
                             title: 'Premium Plan',
-                            price: '\$9.99',
+                            price: '\$4.99',
                             period: '/month',
                             description: 'Best value for multiple pets',
                             isPopular: true,

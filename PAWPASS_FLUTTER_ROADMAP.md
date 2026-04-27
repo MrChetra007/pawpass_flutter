@@ -263,7 +263,7 @@ BottomNavigationBar (5 tabs)
 
 ## 📦 Plan Tiers
 
-| Feature | Free | Pro ($4.99/mo) | Premium ($9.99/mo) |
+| Feature | Free | Pro ($2.99/mo) | Premium ($4.99/mo) |
 |---------|------|---------------------|------------------------|
 | Pet profiles | 1 pet | 3 pets | Unlimited |
 | Health records | 5 records | Unlimited | Unlimited |
@@ -901,7 +901,8 @@ fl_chart: ^0.69.x
 - [ ] Go to App Store Connect → Your App → Subscriptions
 - [ ] Create Subscription Group: `PawPass Premium`
 - [ ] Create auto-renewable subscription:
-  - `com.pawpass.pro.monthly` — $4.99/mo — "Pro Plan Monthly"
+  - `com.pawpass.pro.monthly` — $2.99/mo — "Pro Plan Monthly"
+  - `com.pawpass.premium.monthly` — $4.99/mo — "Premium Plan Monthly"
 - [ ] Add subscription descriptions + promotional images
 - [ ] Enable StoreKit testing in Xcode (StoreKit Configuration file for sandbox)
 

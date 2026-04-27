@@ -367,14 +367,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             context,
             icon: Icons.privacy_tip_outlined,
             title: 'Privacy Policy',
-            onTap: () => context.push('/profile/privacy-policy'),
+            onTap: () => launchUrl(Uri.parse('https://mrchetra007.github.io/privacy_policy/pawpass')),
           ),
           _buildDivider(),
           _buildSettingsTile(
             context,
             icon: Icons.description_outlined,
             title: 'Terms of Service',
-            onTap: () => context.push('/profile/terms-of-service'),
+            onTap: () => launchUrl(Uri.parse('https://mrchetra007.github.io/privacy_policy/pawpass_terms')),
           ),
           _buildDivider(),
           _buildSettingsTile(

@@ -193,8 +193,8 @@ class _TermsOfServiceScreenState extends ConsumerState<TermsOfServiceScreen> {
                       'PawPass offers the following subscription tiers:\n\n',
                     ),
                     _TextSpan('• Free Plan: Limited features\n'),
-                    _TextSpan('• Pro Plan: \$4.99/month\n'),
-                    _TextSpan('• Premium Plan: \$9.99/month\n\n'),
+                    _TextSpan('• Pro Plan: \$2.99/month\n'),
+                    _TextSpan('• Premium Plan: \$4.99/month\n\n'),
                     _TextSpan('b. Payment Processing\n', isBold: true),
                     _TextSpan(
                       'All payments are processed through the Apple App Store or Google Play Store. Subscriptions automatically renew unless cancelled at least 24 hours before the end of the billing period.\n\n',

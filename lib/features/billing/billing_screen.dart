@@ -98,7 +98,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
                   child: _buildPlanCard(
                     context,
                     title: 'Pro Plan',
-                    price: '\$4.99',
+                    price: '\$2.99',
                     period: '/month',
                     description: 'Perfect for single pet owners',
                     isPopular: false,
@@ -119,14 +119,14 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
                   child: _buildPlanCard(
                     context,
                     title: 'Premium Plan',
-                    price: '\$9.99',
+                    price: '\$4.99',
                     period: '/month',
                     description: 'Best value for multiple pets',
                     isPopular: true,
                     features: const [
                       'Unlimited pets',
                       'Everything in Pro Plan',
-                      'PDF passport export',
+                      'PNG passport export',
                       'Priority support',
                       'share on social media',
                     ],
@@ -663,7 +663,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
     final productId = plan == 'pro' ? 'pawpass_pro' : 'pawpass_premium';
     final product = iapService.getProductDetails(productId);
 
-    final price = product?.price ?? (plan == 'pro' ? '\$4.99' : '\$9.99');
+    final price = product?.price ?? (plan == 'pro' ? '\$2.99' : '\$4.99');
     final description = plan == 'pro'
         ? '$price/month - Perfect for single pet owners'
         : '$price/month - Best value for multiple pets';

@@ -341,7 +341,7 @@ Themes:
 
 **Paw Plan card (surface white):**
 - "🐾 Paw Plan" header
-- "$4.99 / month"
+- "$2.99 / month"
 - Feature list with ✅ checkmarks:
   - ✅ Up to 3 pets
   - ✅ Unlimited health records
@@ -354,7 +354,7 @@ Themes:
 
 **Family Plan card (primary green 2px border + "Best Value" badge in primary):**
 - "👨‍👩‍👧 Family Plan" header
-- "$9.99 / month"
+- "$4.99 / month"
 - "Best Value" pill badge in `#3D7A5F` top-right
 - Feature list:
   - ✅ Unlimited pets
