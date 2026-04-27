@@ -849,7 +849,7 @@ class PetProfileScreen extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (user) {
-        if (user == null || user.plan == 'free') {
+        if (user == null || user.plan != 'premium') {
           return _buildUpgradePrompt(context);
         }
         return _buildShareCard(context, ref, pet);
@@ -901,7 +901,7 @@ class PetProfileScreen extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      'Pro: Share via link for vets & sitters',
+                      'Premium: Share via link for vets & sitters',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.textTheme.labelLarge?.color,
                       ),
@@ -924,7 +924,7 @@ class PetProfileScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              child: const Text('Upgrade to Pro'),
+              child: const Text('Upgrade to Premium'),
             ),
           ),
         ],
@@ -1086,7 +1086,7 @@ class PetProfileScreen extends ConsumerWidget {
       } else {
         await sharingService.disableSharing(pet.id);
       }
-      ref.invalidate(petNotifierProvider);
+      ref.read(petNotifierProvider.notifier).loadPets();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1160,7 +1160,7 @@ class PetProfileScreen extends ConsumerWidget {
     if (confirmed == true) {
       final sharingService = SharingService();
       await sharingService.regenerateToken(pet.id);
-      ref.invalidate(petNotifierProvider);
+      ref.read(petNotifierProvider.notifier).loadPets();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
