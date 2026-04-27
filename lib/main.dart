@@ -12,6 +12,8 @@ import 'data/repositories/appointment_repository.dart';
 import 'data/repositories/vaccine_repository.dart';
 import 'data/repositories/medication_repository.dart';
 import 'data/repositories/pet_repository.dart';
+import 'dart:async';
+
 import 'shared/providers/auth_provider.dart';
 import 'shared/providers/theme_provider.dart';
 
@@ -115,11 +117,36 @@ Future<void> rescheduleAllReminders(WidgetRef ref) async {
   }
 }
 
-class PawPassApp extends ConsumerWidget {
+class PawPassApp extends ConsumerStatefulWidget {
   const PawPassApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PawPassApp> createState() => _PawPassAppState();
+}
+
+class _PawPassAppState extends ConsumerState<PawPassApp> {
+  late final StreamSubscription<AuthState> _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.passwordRecovery) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(routerProvider).go('/reset-password');
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeKey = ref.watch(themeNotifierProvider);
     final themeData = PawThemeData.all[themeKey]!;
     final router = ref.watch(routerProvider);

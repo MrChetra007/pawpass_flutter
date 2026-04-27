@@ -13,6 +13,7 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/onboarding_screen.dart';
+import '../../features/auth/reset_password_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/pets/pet_list_screen.dart';
 import '../../features/pets/pet_profile_screen.dart';
@@ -166,6 +167,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) => const ResetPasswordScreen(),
       ),
       GoRoute(
         path: '/onboarding',
