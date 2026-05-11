@@ -545,15 +545,33 @@ class _HelpFaqScreenState extends ConsumerState<HelpFaqScreen> {
     );
   }
 
+  String? _encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((MapEntry<String, String> e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+  }
+
   Future<void> _openEmail() async {
     final Uri emailUri = Uri(
       scheme: 'mailto',
-      path: 'support@pawpass.app',
-      query: 'subject=PawPass Support Request',
+      path: 'sochetra411@gmail.com', // Replace this with your actual support email
+      query: _encodeQueryParameters(<String, String>{
+        'subject': 'PawPass Support Request',
+      }),
     );
 
     if (await canLaunchUrl(emailUri)) {
       await launchUrl(emailUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No email client found. Please email sochetra411@gmail.com directly.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 }
