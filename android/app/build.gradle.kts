@@ -14,7 +14,7 @@ if (keystoreFile.exists()) {
 
 android {
     namespace = "com.sozin.pawpass"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -69,4 +69,5 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
 }
